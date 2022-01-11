@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import NewType
 
-from classes.card import Card
+from classes.cards.card import Card
 
 
 @dataclass

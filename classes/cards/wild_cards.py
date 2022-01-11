@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from classes.card import Card
+from classes.cards.card import Card
 from classes.enums.colors import Colors
 
 
