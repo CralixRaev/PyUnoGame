@@ -10,8 +10,8 @@ class Card:
     color: Colors
     nominal: int = field(init=False)
 
-    def possible_move(self, top_card: Card) -> bool:
-        if top_card.nominal == self.nominal or top_card.color == self.color:
+    def possible_move(self, card: Card) -> bool:
+        if card.color == self.color:
             return True
         else:
             return False

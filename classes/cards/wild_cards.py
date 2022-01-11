@@ -11,6 +11,9 @@ class WildCard(Card):
     def __post_init__(self):
         self.nominal = 50
 
+    def possible_move(self, card: Card) -> bool:
+        return True  # дикой картой мы можем сходить всегда
+
 
 @dataclass
 class WildGetFourCard(WildCard):

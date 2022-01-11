@@ -8,6 +8,12 @@ class SpecialCard(Card):
     def __post_init__(self):
         self.nominal = 20
 
+    def possible_move(self, card: Card) -> bool:
+        if super().possible_move(card) or card.__class__ == self.__class__:
+            return True
+        else:
+            return False
+
 
 @dataclass
 class GetTwoCard(SpecialCard):
