@@ -2,7 +2,7 @@ import os
 import pygame
 
 
-def load_image(name: str, colorkey: int = None, directory: str = 'data'):
+def load_image(name: str, colorkey: int = None, directory: str = 'assets'):
     fullname = os.path.join(directory, name)
     if not os.path.isfile(fullname):
         raise FileNotFoundError(f"Файл с изображением '{fullname}' не найден")
