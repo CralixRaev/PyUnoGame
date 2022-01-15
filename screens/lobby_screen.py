@@ -7,7 +7,7 @@ from pygame.event import Event
 from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.main_screen import MainScreen
-from utilities.utility import load_image
+from utilities.image_utility import load_image
 
 
 class LobbyScreen(Screen):

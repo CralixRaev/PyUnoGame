@@ -5,6 +5,7 @@ import threading
 import logging
 from typing import Callable, NoReturn
 from auth import Authorization, WrongCredentials
+from classes.auth.user import User
 from classes.game.game import Game
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
@@ -33,6 +34,51 @@ class Server:
     def _listen(self, max_clients: int = 3):
         self.sock.listen(max_clients)
 
+    def __register(self, authorization, username: str, password: str, address: tuple[str, int]) -> \
+            tuple[User, Game] | dict:
+        try:
+            user = authorization.register(username, password)
+            user.address = address
+            self.current_game.append_user(user)
+            logging.debug(f"Successfully registered user {username}")
+            return user, self.current_game
+        except sqlite3.IntegrityError:
+            return {'type': 'error',
+                    'message': "Такой пользователь уже существует"}
+        except ValueError as e:
+            return {'type': 'error',
+                    'message': e}
+        except Exception as e:
+            logging.exception("Exception while trying to register", exc_info=e)
+            return {'type': 'error',
+                    'message': "Техническая ошибка, проверьте логи сервера"}
+
+    def __login(self, authorization, username: str, password: str, address: tuple[str, int]) -> \
+            tuple[User, Game] | dict:
+        try:
+            user = authorization.login(username, password)
+            user.address = address
+            self.current_game.append_user(user)
+            logging.debug(f"Successfully authorized user {username}")
+            return user, self.current_game
+        except WrongCredentials:
+            return {'type': 'error',
+                    'message': "Пользователя с таким логином/паролем не существует"}
+        except ValueError as e:
+            return {'type': 'error',
+                    'message': e}
+        except Exception as e:
+            logging.exception("Exception while trying to login", exc_info=e)
+            return {'type': 'error',
+                    'message': "Техническая ошибка, проверьте логи сервера"}
+
+    def __fetch(self):
+        return self.current_game
+
+    def __update(self, data: dict):
+        pass
+        # match data["update_type"]:
+
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
         authorization = Authorization('../database.db')
         while True:
@@ -52,43 +98,16 @@ class Server:
             # python 3.10 goes brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
             match loaded_data['type']:
                 case "register":
-                    username, password = loaded_data['username'], loaded_data['password']
-                    try:
-                        user = authorization.register(username, password)
-                        user.address = address
-                        self.current_game.append_user(user)
-                        logging.debug(f"Successfully registered user {username}")
-                        answer = (user, self.current_game)
-                    except sqlite3.IntegrityError:
-                        answer = {'type': 'error',
-                                  'message': "Такой пользователь уже существует"}
-                    except ValueError as e:
-                        answer = {'type': 'error',
-                                  'message': e}
-                    except Exception as e:
-                        logging.exception("Exception while trying to register", exc_info=e)
-                        answer = {'type': 'error',
-                                  'message': "Техническая ошибка, проверьте логи сервера"}
+                    answer = username, password = loaded_data['username'], loaded_data['password']
+                    self.__register(authorization, username, password, address)
                 case "login":
                     username, password = loaded_data['username'], loaded_data['password']
-                    try:
-                        user = authorization.login(username, password)
-                        user.address = address
-                        self.current_game.append_user(user)
-                        logging.debug(f"Successfully authorized user {username}")
-                        answer = (user, self.current_game)
-                    except WrongCredentials:
-                        answer = {'type': 'error',
-                                  'message': "Пользователя с таким логином/паролем не существует"}
-                    except ValueError as e:
-                        answer = {'type': 'error',
-                                  'message': e}
-                    except Exception as e:
-                        logging.exception("Exception while trying to login", exc_info=e)
-                        answer = {'type': 'error',
-                                  'message': "Техническая ошибка, проверьте логи сервера"}
+                    answer = self.__login(authorization, username, password, address)
                 case "fetch":
-                    answer = self.current_game
+                    answer = self.__fetch()
+                case "update":
+                    self.__update(loaded_data)
+                    answer = self.__fetch()
             sock.sendall(pickle.dumps(answer))
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:

@@ -6,7 +6,12 @@ from pygame.event import Event
 
 from client.networking import Networking
 from screens.abc_screen import Screen
-from utilities.utility import load_image
+from utilities.image_utility import load_image
+
+
+class CardSprite(pygame.sprite.Sprite):
+    def __init__(self):
+        pass
 
 
 class MainScreen(Screen):

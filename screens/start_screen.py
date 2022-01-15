@@ -9,7 +9,7 @@ from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.lobby_screen import LobbyScreen
 from utilities.text_utility import text_on_center, center_rect
-from utilities.utility import load_image
+from utilities.image_utility import load_image
 
 
 class StartScreen(Screen):
@@ -31,6 +31,7 @@ class StartScreen(Screen):
         self.login_input = UITextEntryLine(relative_rect=rect, manager=self.manager)
         rect.y = 375
         self.password_input = UITextEntryLine(relative_rect=rect, manager=self.manager)
+        self.password_input.set_text_hidden()
         rect.y = 450
         self.login_button = UIButton(relative_rect=rect, text='Войти', manager=self.manager)
         rect.y = 525
