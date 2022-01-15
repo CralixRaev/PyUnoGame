@@ -61,10 +61,8 @@ class StartScreen(Screen):
         self.surface.blit(self.background, dest=(0, 0))
         self.surface.blit(self.overlay, dest=(0, 0))
         if self.error_message:
-            _text_on_center(self.surface, self.error_font, f"Произошла ошибка: {self.error_message}",
+            text_on_center(self.surface, self.error_font, f"Произошла ошибка: {self.error_message}",
                             650)
         self._handle_events(events)
         return self.is_running
 
-    def __del__(self):
-        self.manager.clear_and_reset()

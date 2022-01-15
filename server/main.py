@@ -30,7 +30,7 @@ class Server:
     def _bind(self, address: str, port: int):
         self.sock.bind((address, port))
 
-    def _listen(self, max_clients: int = 4):
+    def _listen(self, max_clients: int = 3):
         self.sock.listen(max_clients)
 
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
@@ -55,13 +55,16 @@ class Server:
                     username, password = loaded_data['username'], loaded_data['password']
                     try:
                         user = authorization.register(username, password)
-                        logging.debug(f"Successfully registered user {username}")
                         user.address = address
-                        self.current_game.users.append(user)
+                        self.current_game.append_user(user)
+                        logging.debug(f"Successfully registered user {username}")
                         answer = (user, self.current_game)
                     except sqlite3.IntegrityError:
                         answer = {'type': 'error',
                                   'message': "Такой пользователь уже существует"}
+                    except ValueError as e:
+                        answer = {'type': 'error',
+                                  'message': e}
                     except Exception as e:
                         logging.exception("Exception while trying to register", exc_info=e)
                         answer = {'type': 'error',
@@ -70,13 +73,16 @@ class Server:
                     username, password = loaded_data['username'], loaded_data['password']
                     try:
                         user = authorization.login(username, password)
-                        logging.debug(f"Successfully authorized user {username}")
                         user.address = address
-                        self.current_game.users.append(user)
+                        self.current_game.append_user(user)
+                        logging.debug(f"Successfully authorized user {username}")
                         answer = (user, self.current_game)
                     except WrongCredentials:
                         answer = {'type': 'error',
                                   'message': "Пользователя с таким логином/паролем не существует"}
+                    except ValueError as e:
+                        answer = {'type': 'error',
+                                  'message': e}
                     except Exception as e:
                         logging.exception("Exception while trying to login", exc_info=e)
                         answer = {'type': 'error',

@@ -5,7 +5,7 @@ from networking import Networking
 from screens.start_screen import StartScreen
 
 
-FETCH_RATE = 30
+FETCH_RATE = 1
 
 
 def terminate():
@@ -48,9 +48,8 @@ while running:
     # если по итогам отрисовки экрана мы решили перейти на следующий
     if hasattr(current_screen, 'run'):
         if not current_screen.run(events):
-            old_screen = current_screen
-            current_screen = old_screen.next_screen(screen, manager, networking)
-            del old_screen
+            current_screen = current_screen.next_screen(screen, manager, networking)
+            manager.clear_and_reset()
     else:
         terminate()  # будем считать, что если следующий экран не указан, то пора закрываться
 
