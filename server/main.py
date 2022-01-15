@@ -47,9 +47,9 @@ class Server:
                 case "register":
                     username, password = loaded_data['username'], loaded_data['password']
                     try:
-                        authorization.register(username, password)
-                        answer = {'type': 'register',
-                                  'message': 'Пользователь успешно зарегистрирован'}
+                        user = authorization.register(username, password)
+                        logging.debug(f"Successfully registered user {username}")
+                        answer = user
                     except sqlite3.IntegrityError:
                         answer = {'type': 'error',
                                   'message': "Такой пользователь уже существует"}
@@ -61,6 +61,7 @@ class Server:
                     username, password = loaded_data['username'], loaded_data['password']
                     try:
                         user = authorization.login(username, password)
+                        logging.debug(f"Successfully authorized user {username}")
                         answer = user
                     except WrongCredentials:
                         answer = {'type': 'error',

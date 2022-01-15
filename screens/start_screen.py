@@ -5,23 +5,30 @@ from pygame.event import Event
 import pygame.freetype
 from pygame_gui.elements import UITextEntryLine, UIButton
 
+from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.main_screen import MainScreen
 from utilities.utility import load_image
 
 
 class StartScreen(Screen):
-    def __init__(self, surface: Surface, manager: pygame_gui.UIManager):
-        super().__init__(surface, manager)
+    def __init__(self, surface: Surface, manager: pygame_gui.UIManager, networking: Networking):
+        super().__init__(surface, manager, networking)
         self.next_screen = MainScreen
 
         self.background = Surface((1280, 720))
         pygame.transform.scale(load_image('images/background.jpg'), (1280, 720), self.background)
 
-        self.big_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 35)
+        self.big_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 35)
         self.big_font.fgcolor = pygame.color.Color('White')
-        self.main_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 20)
+        self.big_font.bgcolor = pygame.color.Color('Black')
+        self.main_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
         self.main_font.fgcolor = pygame.color.Color('White')
+        self.main_font.bgcolor = pygame.color.Color('Black')
+
+        self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.error_font.fgcolor = pygame.color.Color('Red')
+        self.error_font.bgcolor = pygame.color.Color('Black')
 
         rect = pygame.Rect((0, 300), (250, 50))
         self._center_rect(rect)
@@ -36,7 +43,13 @@ class StartScreen(Screen):
     def _handle_events(self, events: list[Event]):
         for event in events:
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                self.is_running = False
+                login, password = self.login_input.text, self.password_input.text
+                match event.ui_element:
+                    case self.login_button:
+                        print(self.networking.login(login, password))
+                    case self.register_button:
+                        print(self.networking.register(login, password))
+                # self.is_running = False
 
     def _text_on_center(self, font: pygame.freetype.Font, text: str, y: int):
         text_rect = font.get_rect(text)
