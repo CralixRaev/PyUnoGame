@@ -15,6 +15,7 @@ class Networking:
 
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.authorized_user = None
         self._connect(address, port)
 
     def _connect(self, address, port):
@@ -27,6 +28,7 @@ class Networking:
         if type(answer) == dict:
             raise WrongCredentials(answer['message'])
         else:
+            self.authorized_user = answer
             return answer
 
     def register(self, username, password) -> User:
@@ -36,6 +38,7 @@ class Networking:
         if type(answer) == dict:
             raise ValueError(answer['message'])
         else:
+            self.authorized_user = answer
             return answer
 
     def __del__(self):
