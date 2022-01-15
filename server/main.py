@@ -5,6 +5,7 @@ import threading
 import logging
 from typing import Callable, NoReturn
 from auth import Authorization, WrongCredentials
+from classes.game.game import Game
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
 
@@ -19,6 +20,8 @@ class Server:
     # сконструировать красивый протокол, сделать сервер не блокирующим (т.е. асинхронным)
     # но времени мало + мне лень, а также в лицее нам про асинхронность почему-то не рассказывают)
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
+        self.current_game = Game([])
+        self.threads = []
         # порт в моём случае выбран абсолютно случайно
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._bind(address, port)
@@ -30,13 +33,17 @@ class Server:
     def _listen(self, max_clients: int = 4):
         self.sock.listen(max_clients)
 
-    @staticmethod
-    def _client_thread(sock: socket.socket, address: tuple[str, int]):
+    def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
         authorization = Authorization('../database.db')
         while True:
             data = sock.recv(2048)
             if not data:
                 logging.info(f"Client {address} closed connection, so we are closing it too")
+                try:
+                    self.current_game.users.remove(
+                        [user for user in self.current_game.users if user.address == address][0])
+                except IndexError:
+                    logging.warning(f"User with address {address} didnt logon, so we cant remove it")
                 sock.close()
                 break
             loaded_data: dict = pickle.loads(data)
@@ -49,7 +56,9 @@ class Server:
                     try:
                         user = authorization.register(username, password)
                         logging.debug(f"Successfully registered user {username}")
-                        answer = user
+                        user.address = address
+                        self.current_game.users.append(user)
+                        answer = (user, self.current_game)
                     except sqlite3.IntegrityError:
                         answer = {'type': 'error',
                                   'message': "Такой пользователь уже существует"}
@@ -62,7 +71,9 @@ class Server:
                     try:
                         user = authorization.login(username, password)
                         logging.debug(f"Successfully authorized user {username}")
-                        answer = user
+                        user.address = address
+                        self.current_game.users.append(user)
+                        answer = (user, self.current_game)
                     except WrongCredentials:
                         answer = {'type': 'error',
                                   'message': "Пользователя с таким логином/паролем не существует"}
@@ -70,6 +81,8 @@ class Server:
                         logging.exception("Exception while trying to login", exc_info=e)
                         answer = {'type': 'error',
                                   'message': "Техническая ошибка, проверьте логи сервера"}
+                case "fetch":
+                    answer = self.current_game
             sock.sendall(pickle.dumps(answer))
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:
@@ -79,6 +92,7 @@ class Server:
             client_socket, client_address = self.sock.accept()
             logging.info(f"New client {client_address}, starting client thread")
             thread = threading.Thread(target=client_thread, args=(client_socket, client_address))
+            self.threads.append(thread)
             thread.start()
 
     def __del__(self):

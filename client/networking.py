@@ -14,6 +14,7 @@ class Networking:
     """
 
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
+        self.current_game = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.authorized_user = None
         self._connect(address, port)
@@ -24,22 +25,29 @@ class Networking:
     def login(self, username, password) -> User:
         data = {'type': 'login', 'username': username, 'password': password}
         self.sock.sendall(pickle.dumps(data))
-        answer = pickle.loads(self.sock.recv(2048))
+        answer = user, game = pickle.loads(self.sock.recv(2048))
         if type(answer) == dict:
             raise WrongCredentials(answer['message'])
         else:
-            self.authorized_user = answer
+            self.authorized_user = user
+            self.current_game = game
             return answer
 
     def register(self, username, password) -> User:
         data = {'type': 'register', 'username': username, 'password': password}
         self.sock.sendall(pickle.dumps(data))
-        answer = pickle.loads(self.sock.recv(2048))
+        answer = user, game = pickle.loads(self.sock.recv(2048))
         if type(answer) == dict:
             raise ValueError(answer['message'])
         else:
-            self.authorized_user = answer
+            self.authorized_user = user
+            self.current_game = game
             return answer
+
+    def fetch(self):
+        data = {'type': 'fetch'}
+        self.sock.sendall(pickle.dumps(data))
+        self.current_game = pickle.loads(self.sock.recv(2048))
 
     def __del__(self):
         self.sock.close()

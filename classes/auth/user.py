@@ -5,3 +5,4 @@ from dataclasses import dataclass
 class User:
     id: int
     name: str
+    address: tuple[str, int] = None

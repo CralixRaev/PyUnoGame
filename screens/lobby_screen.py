@@ -22,4 +22,5 @@ class LobbyScreen(Screen):
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
         self.surface.blit(self.overlay, dest=(0, 0))
+        print(self.networking.current_game)
         return self.is_running
