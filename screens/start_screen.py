@@ -8,6 +8,7 @@ from pygame_gui.elements import UITextEntryLine, UIButton
 from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.lobby_screen import LobbyScreen
+from utilities.text_utility import text_on_center, center_rect
 from utilities.utility import load_image
 
 
@@ -26,7 +27,7 @@ class StartScreen(Screen):
         self.error_font.bgcolor = pygame.color.Color('Black')
 
         rect = pygame.Rect((0, 300), (250, 50))
-        self._center_rect(rect)
+        center_rect(self.surface, rect)
         self.login_input = UITextEntryLine(relative_rect=rect, manager=self.manager)
         rect.y = 375
         self.password_input = UITextEntryLine(relative_rect=rect, manager=self.manager)
@@ -37,15 +38,6 @@ class StartScreen(Screen):
                                         manager=self.manager)
 
         self.error_message = None
-
-    def _center_rect(self, rect: pygame.rect.Rect):
-        rect.centerx = self.surface.get_width() // 2
-
-    def _text_on_center(self, font: pygame.freetype.Font, text: str, y: int):
-        text_rect = font.get_rect(text)
-        self._center_rect(text_rect)
-        text_rect.centery = y
-        font.render_to(self.surface, text_rect, text)
 
     def _handle_events(self, events: list[Event]):
         for event in events:
@@ -69,7 +61,8 @@ class StartScreen(Screen):
         self.surface.blit(self.background, dest=(0, 0))
         self.surface.blit(self.overlay, dest=(0, 0))
         if self.error_message:
-            self._text_on_center(self.error_font, f"Произошла ошибка: {self.error_message}", 650)
+            _text_on_center(self.surface, self.error_font, f"Произошла ошибка: {self.error_message}",
+                            650)
         self._handle_events(events)
         return self.is_running
 

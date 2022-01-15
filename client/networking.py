@@ -7,6 +7,8 @@ from classes.auth.user import User
 
 # data = {'type': 'register', 'username': 'user', 'password': 'test'}
 # data = {'type': 'login', 'username': 'user', 'password': 'test'}
+from classes.game.game import Game
+
 
 class Networking:
     """
@@ -14,7 +16,7 @@ class Networking:
     """
 
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
-        self.current_game = None
+        self.current_game: Game = Game([])
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.authorized_user = None
         self._connect(address, port)

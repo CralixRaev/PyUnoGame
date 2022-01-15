@@ -1,4 +1,5 @@
 import pygame
+import pygame.freetype
 import pygame_gui
 from pygame.surface import Surface
 from pygame.event import Event
@@ -19,8 +20,15 @@ class LobbyScreen(Screen):
 
         self.overlay = load_image('images/screens/lobby_overlay.png')
 
+        self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.error_font.fgcolor = pygame.color.Color('White')
+
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
         self.surface.blit(self.overlay, dest=(0, 0))
-        print(self.networking.current_game)
+        for i, user in enumerate(self.networking.current_game.users):
+            self.error_font.render_to(self.surface,
+                                      (340 * i + 45, 465),
+                                      f'{user.name} (Вы)'
+                                      if self.networking.authorized_user == user else user.name)
         return self.is_running
