@@ -1,8 +1,9 @@
+import pickle
 import socket
 import threading
 import logging
 from typing import Callable, NoReturn
-
+from auth import Authorization
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
 
@@ -14,7 +15,7 @@ class Server:
 
     # Конечно, это ничего более чем просто демонстрация
     # учитывая, мою базу по сетям, я бы мог и написать эту историю поверх UDP,
-    # сконструировать красивые пакетики, сделать сервер не блокирующим (т.е. асинхронным)
+    # сконструировать красивый протокол, сделать сервер не блокирующим (т.е. асинхронным)
     # но времени мало + мне лень, а также в лицее нам про асинхронность почему-то не рассказывают)
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
         # порт в моём случае выбран абсолютно случайно
@@ -29,9 +30,27 @@ class Server:
         self.sock.listen(max_clients)
 
     @staticmethod
-    def _client_thread(sock: socket.socket):
-        print(sock.recv(2048).decode())
-        sock.sendall("Hello-hello!".encode())
+    def _client_thread(sock: socket.socket, address: tuple[str, int]):
+        authorization = Authorization('../database.db')
+        while True:
+            data = sock.recv(2048)
+            if not data:
+                logging.info(f"Client {address} closed connection, so we are closing it too")
+                sock.close()
+                break
+            loaded_data: dict = pickle.loads(data)
+
+            answer = None
+            if loaded_data['type'] == 'register':
+                username, password = loaded_data['username'], loaded_data['password']
+                try:
+                    authorization.register(username, password)
+                    answer = {'type': 'register', 'message': 'success!'}
+                except Exception as e:
+                    logging.exception("Exception while trying to register", exc_info=e)
+                    answer = {'type': 'error', 'message': "Не удалось зарегистрироваться"}
+
+            sock.sendall(pickle.dumps(answer))
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:
         if not client_thread:
@@ -39,11 +58,12 @@ class Server:
         while True:
             client_socket, client_address = self.sock.accept()
             logging.info(f"New client {client_address}, starting client thread")
-            thread = threading.Thread(target=client_thread, args=(client_socket,))
+            thread = threading.Thread(target=client_thread, args=(client_socket, client_address))
             thread.start()
 
     def __del__(self):
         self.sock.close()
+
 
 if __name__ == '__main__':
     server = Server(address="192.168.2.59")
