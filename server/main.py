@@ -1,9 +1,10 @@
 import pickle
 import socket
+import sqlite3
 import threading
 import logging
 from typing import Callable, NoReturn
-from auth import Authorization
+from auth import Authorization, WrongCredentials
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
 
@@ -41,15 +42,33 @@ class Server:
             loaded_data: dict = pickle.loads(data)
 
             answer = None
-            if loaded_data['type'] == 'register':
-                username, password = loaded_data['username'], loaded_data['password']
-                try:
-                    authorization.register(username, password)
-                    answer = {'type': 'register', 'message': 'success!'}
-                except Exception as e:
-                    logging.exception("Exception while trying to register", exc_info=e)
-                    answer = {'type': 'error', 'message': "Не удалось зарегистрироваться"}
-
+            # python 3.10 goes brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+            match loaded_data['type']:
+                case "register":
+                    username, password = loaded_data['username'], loaded_data['password']
+                    try:
+                        authorization.register(username, password)
+                        answer = {'type': 'register',
+                                  'message': 'Пользователь успешно зарегистрирован'}
+                    except sqlite3.IntegrityError:
+                        answer = {'type': 'error',
+                                  'message': "Такой пользователь уже существует"}
+                    except Exception as e:
+                        logging.exception("Exception while trying to register", exc_info=e)
+                        answer = {'type': 'error',
+                                  'message': "Техническая ошибка, проверьте логи сервера"}
+                case "login":
+                    username, password = loaded_data['username'], loaded_data['password']
+                    try:
+                        user = authorization.login(username, password)
+                        answer = user
+                    except WrongCredentials:
+                        answer = {'type': 'error',
+                                  'message': "Пользователя с таким логином/паролем не существует"}
+                    except Exception as e:
+                        logging.exception("Exception while trying to login", exc_info=e)
+                        answer = {'type': 'error',
+                                  'message': "Техническая ошибка, проверьте логи сервера"}
             sock.sendall(pickle.dumps(answer))
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:
