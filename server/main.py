@@ -31,7 +31,7 @@ class Server:
     @staticmethod
     def _client_thread(sock: socket.socket):
         print(sock.recv(2048).decode())
-        sock.send("Hello-hello!".encode())
+        sock.sendall("Hello-hello!".encode())
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:
         if not client_thread:
