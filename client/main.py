@@ -1,7 +1,7 @@
 import sys
 import pygame
 import pygame_gui
-from client.networking import Networking
+from networking import Networking
 from screens.main_screen import MainScreen
 from screens.start_screen import StartScreen
 

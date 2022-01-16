@@ -13,7 +13,7 @@ def thread(num):
         capture_output=True))
 
 
-for i in range(1, 5):
+for i in range(2, 5):
     print(i)
     a = threading.Thread(target=thread, args=(i,))
     a.start()
