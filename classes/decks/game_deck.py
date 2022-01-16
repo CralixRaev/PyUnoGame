@@ -30,4 +30,4 @@ class GameDeck:
             # не было бы очень приятно замедлять работу программы тонной исключений
 
     def init_random(self):
-        self.append_card(random_cards()[0])
+        self.cards.appendleft(random_cards(1)[0])

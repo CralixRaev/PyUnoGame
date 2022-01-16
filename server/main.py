@@ -6,6 +6,7 @@ import logging
 from typing import Callable, NoReturn
 from auth import Authorization, WrongCredentials
 from classes.auth.user import User
+from classes.decks.game_deck import GameDeck
 from classes.game.game import Game
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
@@ -21,7 +22,8 @@ class Server:
     # сконструировать красивый протокол, сделать сервер не блокирующим (т.е. асинхронным)
     # но времени мало + мне лень, а также в лицее нам про асинхронность почему-то не рассказывают)
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
-        self.current_game = Game([])
+        self.current_game = Game([], GameDeck())
+        self.current_game.deck.init_random()
         self.threads = []
         # порт в моём случае выбран абсолютно случайно
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

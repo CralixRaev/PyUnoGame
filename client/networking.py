@@ -18,7 +18,6 @@ class Networking:
 
     def __init__(self, address: str = socket.gethostname(), port: int = 5499):
         self.current_game: Game = Game([], GameDeck())
-        self.current_game.deck.init_random()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.authorized_user = None
         self._connect(address, port)
