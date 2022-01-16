@@ -51,5 +51,8 @@ class Networking:
         self.sock.sendall(pickle.dumps(data))
         self.current_game = pickle.loads(self.sock.recv(2048))
 
+    def get_user_from_game(self) -> User:
+        return [user for user in self.current_game.users if user.id == self.authorized_user.id][0]
+
     def __del__(self):
         self.sock.close()

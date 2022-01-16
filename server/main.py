@@ -38,6 +38,7 @@ class Server:
             tuple[User, Game] | dict:
         try:
             user = authorization.register(username, password)
+            user.deck.init_random()
             user.address = address
             self.current_game.append_user(user)
             logging.debug(f"Successfully registered user {username}")
@@ -57,6 +58,7 @@ class Server:
             tuple[User, Game] | dict:
         try:
             user = authorization.login(username, password)
+            user.deck.init_random()
             user.address = address
             self.current_game.append_user(user)
             logging.debug(f"Successfully authorized user {username}")

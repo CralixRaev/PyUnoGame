@@ -8,4 +8,7 @@ class User:
     id: int
     name: str
     address: tuple[str, int] = None
-    deck: PlayerDeck = PlayerDeck()
+    deck: PlayerDeck = None
+
+    def __post_init__(self):
+        self.deck = PlayerDeck()

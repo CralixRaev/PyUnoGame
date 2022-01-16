@@ -21,3 +21,9 @@ class PlayerDeck:
 
     def __len__(self) -> int:
         return len(self.cards)
+
+    def __str__(self) -> str:
+        return f'PlayerDeck(cards={self.cards})'
+
+    def __repr__(self) -> str:
+        return f'PlayerDeck(cards={self.cards})'
