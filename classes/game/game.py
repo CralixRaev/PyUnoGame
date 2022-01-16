@@ -19,4 +19,4 @@ class Game:
 
     @property
     def is_started(self) -> bool:
-        return True if len(self.users) == 4 else False
+        return True if len(self.users) == 1 else False

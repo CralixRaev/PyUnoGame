@@ -1,5 +1,8 @@
 from random import choice
 
+from pygame.color import Color
+from pygame.surface import Surface
+
 from classes.cards.card import Card
 from classes.cards.numeric_card import NumericCard
 from classes.enums.colors import Colors
