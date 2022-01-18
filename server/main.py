@@ -1,9 +1,10 @@
+import logging
 import pickle
 import socket
 import sqlite3
 import threading
-import logging
 from typing import Callable, NoReturn
+
 from auth import Authorization, WrongCredentials
 from classes.auth.user import User
 from classes.decks.game_deck import GameDeck
@@ -129,5 +130,5 @@ class Server:
 
 
 if __name__ == '__main__':
-    server = Server(address="192.168.2.59")
+    server = Server(address="172.31.146.54")
     server.mainloop()

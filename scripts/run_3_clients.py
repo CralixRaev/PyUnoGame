@@ -1,16 +1,17 @@
-import os
+import subprocess
 import threading
 import time
-import subprocess
 
 processes = []
 
 
 def thread(num):
-    processes.append(subprocess.run(
-        ['D:\\PyUnoGame\\venv\\Scripts\\python.exe', 'D:\\PyUnoGame\\client\\main.py', f'user{num}',
+    process = subprocess.run(
+        ['/home/cralix/projects/PyUnoGame/venv/bin/python3',
+         '/home/cralix/projects/PyUnoGame/client/main.py', f'user{num}',
          'pass'],
-        capture_output=True))
+        capture_output=True)
+    print(process.stderr)
 
 
 for i in range(2, 5):

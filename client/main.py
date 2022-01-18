@@ -1,13 +1,13 @@
 import sys
+
 import pygame
 import pygame_gui
+
 from networking import Networking
-from screens.main_screen import MainScreen
 from screens.start_screen import StartScreen
 
-
 FETCH_RATE = 30
-SERVER_IP = "192.168.2.59"
+SERVER_IP = "172.31.146.54"
 
 
 def terminate():

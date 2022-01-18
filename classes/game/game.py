@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from classes.auth.user import User
 from classes.decks.game_deck import GameDeck
 from classes.enums.directions import Directions
@@ -19,4 +20,4 @@ class Game:
 
     @property
     def is_started(self) -> bool:
-        return True if len(self.users) == 1 else False
+        return True if len(self.users) == 4 else False
