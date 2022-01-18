@@ -7,8 +7,8 @@ processes = []
 
 def thread(num):
     process = subprocess.run(
-        ['/home/cralix/projects/PyUnoGame/venv/bin/python3',
-         '/home/cralix/projects/PyUnoGame/client/main.py', f'user{num}',
+        ['D:/PyUnoGame/venv/Scripts/python.exe',
+         '..\client\main.py', f'user{num}',
          'pass'],
         capture_output=True)
     print(process.stderr)

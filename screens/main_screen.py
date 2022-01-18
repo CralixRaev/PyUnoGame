@@ -46,7 +46,7 @@ class CardSprite(pygame.sprite.Sprite):
             elif represent_card.__class__ == WildChangeColorCard:
                 self.image = cards.subsurface(120 * 13, 0, 120, 180)
             elif represent_card.__class__ == WildGetFourCard:
-                self.image = cards.subsurface(120 * 14, 180, 120, 180)
+                self.image = cards.subsurface(120 * 13, 180, 120, 180)
             else:
                 self.image = cards.subsurface(120 * CardSprite.card_id[represent_card.__class__],
                                               180 * CardSprite.card_color[represent_card.color],
@@ -55,12 +55,21 @@ class CardSprite(pygame.sprite.Sprite):
             self.image = load_image('images/blank_card.png')
             self.image = pygame.transform.scale(self.image, (120, 180))  # TODO: pre-resize a picture
             # pygame image scaling is such a shit
+        self.is_blank = is_blank
+        self.rect = pygame.Rect(x, y, *self.image.get_size())
+        self.image = pygame.transform.rotate(self.image, rotation)
 
-        self.rect = pygame.Rect(x, y, 0, 0)
-        pygame.transform.rotate(self.image, rotation)
+        self._active = self.rect.copy()
+        self._non_active = self.rect.copy()
+        self._active.y -= 60
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        pass
+        if not self.is_blank:
+            if self.rect.collidepoint(*pygame.mouse.get_pos()):
+                if not pygame.sprite.spritecollideany(self, group_without_self):
+                    self.rect = self._active
+            else:
+                self.rect = self._non_active
 
 
 class DirectionSprite(pygame.sprite.Sprite):
@@ -130,10 +139,10 @@ class MainScreen(Screen):
         for key, value in self._player_groups.items():
             for i, card in enumerate(self.networking.current_game.users[indexes[key]].deck.cards):
                 coordinates = {
-                    'self': ((80 * i, 600), 0),
-                    'right': ((600, 80 * i), 90),
-                    'left': ((100, 80 * i), 270),
-                    'opposite': ((80 * i, 100), 180),
+                    'self': ((80 * i + 300, 600), 0),
+                    'right': ((1180, 80 * i), 90),
+                    'left': ((0, 80 * i), 270),
+                    'opposite': ((80 * i + 300, 0), 180),
                 }
                 CardSprite(card, cards, coordinates[key][0][0], coordinates[key][0][1],
                            self._all_cards, self._player_groups[key],
@@ -150,4 +159,5 @@ class MainScreen(Screen):
 
         self._all_cards.draw(self.surface)
         self._all_cards.update()
+        self._player_groups['self'].update()
         return self.is_running
