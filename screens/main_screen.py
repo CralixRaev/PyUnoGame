@@ -45,25 +45,24 @@ class CardSprite(pygame.sprite.Sprite):
         Colors.BLUE: 3,
     }
 
-    def __init__(self, represent_card: Card, cards: pygame.surface.Surface, x: int, y: int,
-                 networking: Networking, *groups: AbstractGroup, is_blank: bool = False,
+    def __init__(self, represent_card: Card, cardset: pygame.surface.Surface, x: int, y: int,
+                 *groups: AbstractGroup, is_blank: bool = False,
                  rotation: int = 0):
         super().__init__(*groups)
-        self.networking = networking
         self.represent_card = represent_card
         if not is_blank:
             if represent_card.__class__ == NumericCard:
-                self.image = cards.subsurface(120 * represent_card.number,
-                                              180 * CardSprite.card_color[represent_card.color],
-                                              120, 180)
+                self.image = cardset.subsurface(120 * represent_card.number,
+                                                180 * CardSprite.card_color[represent_card.color],
+                                                120, 180)
             elif represent_card.__class__ == WildChangeColorCard:
-                self.image = cards.subsurface(120 * 13, 0, 120, 180)
+                self.image = cardset.subsurface(120 * 13, 0, 120, 180)
             elif represent_card.__class__ == WildGetFourCard:
-                self.image = cards.subsurface(120 * 13, 180, 120, 180)
+                self.image = cardset.subsurface(120 * 13, 180, 120, 180)
             else:
-                self.image = cards.subsurface(120 * CardSprite.card_id[represent_card.__class__],
-                                              180 * CardSprite.card_color[represent_card.color],
-                                              120, 180)
+                self.image = cardset.subsurface(120 * CardSprite.card_id[represent_card.__class__],
+                                                180 * CardSprite.card_color[represent_card.color],
+                                                120, 180)
         else:
             self.image = load_image('images/blank_card.png')
         self.is_blank = is_blank
@@ -75,11 +74,7 @@ class CardSprite(pygame.sprite.Sprite):
 
     def handle_events(self, events: list[Event]):
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                print('mousedown')
-                if self.rect == self._active:
-                    print('and picture is nice too')
-                    self.networking.throw_card(self.represent_card)
+            pass
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         if not self.is_blank:
@@ -142,6 +137,8 @@ class MainScreen(Screen):
         self._miscellaneous_group = pygame.sprite.Group()
         DirectionSprite(self.networking.current_game, self._miscellaneous_group)
 
+        self.cardset = load_image('images/cards.png')
+
         self._all_cards = pygame.sprite.Group()
         self._game_deck = pygame.sprite.Group()
         self._player_groups = {'self': SelfCardsGroup(),
@@ -153,31 +150,38 @@ class MainScreen(Screen):
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
         self.error_font.fgcolor = pygame.color.Color('White')
 
-    def run(self, events: list[Event]) -> bool:
-        self.surface.blit(self.background, dest=(0, 0))
-        self._all_cards.empty()  # you didn't see this
-        for key, value in self._player_groups.items():
-            value.empty()
-        indexes = _PLAYER_INDEXES[
-            self.networking.current_game.users.index(self.networking.get_user_from_game())]
-        cards = load_image('images/cards.png')
-        for key, value in self._player_groups.items():
-            for i, card in enumerate(self.networking.current_game.users[indexes[key]].deck.cards):
-                coordinates = {
-                    'self': ((80 * i + 300, 600), 0),
-                    'right': ((1180, 80 * i), 90),
-                    'left': ((0, 80 * i), 270),
-                    'opposite': ((80 * i + 300, 0), 180),
-                }
-                CardSprite(card, cards, coordinates[key][0][0], coordinates[key][0][1],
-                           self.networking, self._all_cards, self._player_groups[key],
-                           is_blank=True if key != 'self' else False, rotation=coordinates[key][1])
+    def _draw_cards(self, player: str, cards: list[Card], max_width: int = 500):
+        for i, card in enumerate(cards):
+            coords = (0, 0)
+            rotation = 0
+            match player:
+                case 'self':
+                    coords = (max_width / len(cards) * i, 620)
+                case 'right':
+                    coords = (1180, max_width / len(cards))
+                    rotation = 270
+                case 'left':
+                    coords = (100, max_width / len(cards))
+                    rotation = 90
+                case 'opposite':
+                    coords = (max_width / len(cards), 100)
+                    rotation = 180
+            CardSprite(card, self.cardset, *coords, self._all_cards, self._player_groups[player],
+                       is_blank=True if player != 'self' else False, rotation=rotation)
 
+    def _draw_players_cards(self):
+        users = self.networking.current_game.users
+        our_index = users.index(self.networking.get_user_from_game())
+        other_players = _PLAYER_INDEXES[our_index]
+        for key, group in self._player_groups.items():
+            group.empty()
+            self._draw_cards(key, users[other_players[key]].deck.cards)
+
+    def run(self, events: list[Event]) -> bool:
+        self.surface.blit(self.background, (0, 0))
+        self._draw_players_cards()
         self._miscellaneous_group.draw(self.surface)
         self._miscellaneous_group.update()
-        # print(self.networking.current_game.deck.cards)
         self._all_cards.draw(self.surface)
         self._all_cards.update()
-        self._player_groups['self'].update()
-        self._player_groups['self'].handle_events(events)
         return self.is_running
