@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union, Sequence
 
 import pygame
 import pygame.freetype
@@ -19,6 +19,16 @@ from screens.abc_screen import Screen
 from utilities.image_utility import load_image
 
 
+class SelfCardsGroup(pygame.sprite.Group):
+    def __init__(self, *sprites: Union[pygame.sprite.Sprite, Sequence[pygame.sprite.Sprite]]):
+        super().__init__(*sprites)
+
+    def handle_events(self, events: list[Event]):
+        for sprite in self.sprites():
+            if hasattr(sprite, 'handle_events'):
+                sprite.handle_events(events)
+
+
 class CardSprite(pygame.sprite.Sprite):
     card_id = {
         SkipCard: 10,
@@ -36,8 +46,11 @@ class CardSprite(pygame.sprite.Sprite):
     }
 
     def __init__(self, represent_card: Card, cards: pygame.surface.Surface, x: int, y: int,
-                 *groups: AbstractGroup, is_blank: bool = False, rotation: int = 0):
+                 networking: Networking, *groups: AbstractGroup, is_blank: bool = False,
+                 rotation: int = 0):
         super().__init__(*groups)
+        self.networking = networking
+        self.represent_card = represent_card
         if not is_blank:
             if represent_card.__class__ == NumericCard:
                 self.image = cards.subsurface(120 * represent_card.number,
@@ -53,21 +66,25 @@ class CardSprite(pygame.sprite.Sprite):
                                               120, 180)
         else:
             self.image = load_image('images/blank_card.png')
-            self.image = pygame.transform.scale(self.image, (120, 180))  # TODO: pre-resize a picture
-            # pygame image scaling is such a shit
         self.is_blank = is_blank
         self.rect = pygame.Rect(x, y, *self.image.get_size())
         self.image = pygame.transform.rotate(self.image, rotation)
-
         self._active = self.rect.copy()
         self._non_active = self.rect.copy()
         self._active.y -= 60
 
+    def handle_events(self, events: list[Event]):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print('mousedown')
+                if self.rect == self._active:
+                    print('and picture is nice too')
+                    self.networking.throw_card(self.represent_card)
+
     def update(self, *args: Any, **kwargs: Any) -> None:
         if not self.is_blank:
             if self.rect.collidepoint(*pygame.mouse.get_pos()):
-                if not pygame.sprite.spritecollideany(self, group_without_self):
-                    self.rect = self._active
+                self.rect = self._active
             else:
                 self.rect = self._non_active
 
@@ -126,16 +143,24 @@ class MainScreen(Screen):
         DirectionSprite(self.networking.current_game, self._miscellaneous_group)
 
         self._all_cards = pygame.sprite.Group()
-
-        cards = load_image('images/cards.png')
-
-        self._player_groups = {'self': pygame.sprite.Group(),
+        self._game_deck = pygame.sprite.Group()
+        self._player_groups = {'self': SelfCardsGroup(),
                                'right': pygame.sprite.Group(),
                                'left': pygame.sprite.Group(),
                                'opposite': pygame.sprite.Group()}
-        indexes = _PLAYER_INDEXES[
-            self.networking.current_game.users.index(networking.get_user_from_game())]
 
+        self.background = load_image('images/main.png')
+        self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.error_font.fgcolor = pygame.color.Color('White')
+
+    def run(self, events: list[Event]) -> bool:
+        self.surface.blit(self.background, dest=(0, 0))
+        self._all_cards.empty()  # you didn't see this
+        for key, value in self._player_groups.items():
+            value.empty()
+        indexes = _PLAYER_INDEXES[
+            self.networking.current_game.users.index(self.networking.get_user_from_game())]
+        cards = load_image('images/cards.png')
         for key, value in self._player_groups.items():
             for i, card in enumerate(self.networking.current_game.users[indexes[key]].deck.cards):
                 coordinates = {
@@ -145,19 +170,14 @@ class MainScreen(Screen):
                     'opposite': ((80 * i + 300, 0), 180),
                 }
                 CardSprite(card, cards, coordinates[key][0][0], coordinates[key][0][1],
-                           self._all_cards, self._player_groups[key],
+                           self.networking, self._all_cards, self._player_groups[key],
                            is_blank=True if key != 'self' else False, rotation=coordinates[key][1])
 
-        self.background = load_image('images/main.png')
-        self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
-        self.error_font.fgcolor = pygame.color.Color('White')
-
-    def run(self, events: list[Event]) -> bool:
-        self.surface.blit(self.background, dest=(0, 0))
         self._miscellaneous_group.draw(self.surface)
         self._miscellaneous_group.update()
-
+        # print(self.networking.current_game.deck.cards)
         self._all_cards.draw(self.surface)
         self._all_cards.update()
         self._player_groups['self'].update()
+        self._player_groups['self'].handle_events(events)
         return self.is_running

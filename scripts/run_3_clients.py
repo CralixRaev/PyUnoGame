@@ -1,3 +1,4 @@
+import os
 import subprocess
 import threading
 import time
@@ -6,9 +7,10 @@ processes = []
 
 
 def thread(num):
+    print(os.getcwd())
     process = subprocess.run(
-        ['D:/PyUnoGame/venv/Scripts/python.exe',
-         '..\client\main.py', f'user{num}',
+        ['../venv/bin/python3',
+         '../client/main.py', f'user{num}',
          'pass'],
         capture_output=True)
     print(process.stderr)

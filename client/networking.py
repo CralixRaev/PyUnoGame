@@ -3,10 +3,9 @@ import socket
 
 from classes.auth.exceptions import WrongCredentials
 from classes.auth.user import User
-
-
 # data = {'type': 'register', 'username': 'user', 'password': 'test'}
 # data = {'type': 'login', 'username': 'user', 'password': 'test'}
+from classes.cards.card import Card
 from classes.decks.game_deck import GameDeck
 from classes.game.game import Game
 
@@ -51,6 +50,11 @@ class Networking:
         data = {'type': 'fetch'}
         self.sock.sendall(pickle.dumps(data))
         self.current_game = pickle.loads(self.sock.recv(2048))
+
+    def throw_card(self, card: Card) -> bool:
+        data = {'type': 'throw', 'card': card}
+        self.sock.sendall(pickle.dumps(data))
+        return pickle.loads(self.sock.recv(2048))
 
     def get_user_from_game(self) -> User:
         return [user for user in self.current_game.users if user.id == self.authorized_user.id][0]
