@@ -12,6 +12,7 @@ from classes.enums.directions import Directions
 from classes.game.game import Game
 from client.networking import Networking
 from screens.abc_screen import Screen
+from utilities.card_utility import card_image
 from utilities.image_utility import load_image
 
 
@@ -21,10 +22,12 @@ class CardsDrawer:
         self.max_width = max_width
         self.is_blank = is_blank
         self.image = Surface((self.max_width, 120))
+        self.card_set = load_image('images/cards.png')
 
     def draw(self) -> Surface:
         for i, card in enumerate(self.deck.cards):
-            self.image.blit()
+            self.image.blit(card_image(self.card_set, card),
+                            (self.max_width / len(self.deck.cards) * i, 0), )
         return self.image
 
 class DirectionSprite(pygame.sprite.Sprite):
