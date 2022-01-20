@@ -15,5 +15,9 @@ class Screen:
         self.next_screen = None
         self.networking = networking
 
+    def _handle_events(self, events: list[Event]):
+        for event in events:
+            pass
+
     def run(self, events: list[Event]) -> bool:
         pass

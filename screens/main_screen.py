@@ -17,16 +17,22 @@ from utilities.image_utility import load_image
 
 
 class Cards(pygame.sprite.Sprite):
-    def __init__(self, deck: PlayerDeck, x, y, *groups: AbstractGroup, max_width: int = 600,
-                 is_blank: bool = False):
+    def __init__(self, deck: PlayerDeck, x, y, networking: Networking, *groups: AbstractGroup,
+                 max_width: int = 600, is_blank: bool = False):
         super().__init__(*groups)
         self.deck = deck
+        self.networking = networking
         self.max_width = max_width
         self.is_blank = is_blank
         self.rect = pygame.rect.Rect(x, y - 60, self.max_width, 240)
         self.image = Surface((self.max_width + 120, 180), pygame.SRCALPHA, 32)
         self.image.convert_alpha()
         self.card_set = load_image('images/cards.png')
+        self._active_card_index = -1
+
+    def handle_mousedown(self, event):
+        if self._active_card_index >= 0:
+            print(self.networking.throw_card(self.deck.cards[self._active_card_index]))
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.image.fill((0, 0, 0, 0))
@@ -35,12 +41,12 @@ class Cards(pygame.sprite.Sprite):
         if self.rect.collidepoint(mouse_x, mouse_y):
             # coordinates regarding our sprite
             mouse_x -= self.rect.x
-            card_index = mouse_x // (self.max_width / len(self.deck.cards))
+            self._active_card_index = int(mouse_x // (self.max_width / len(self.deck.cards)))
         else:
-            card_index = -1
+            self._active_card_index = -1
         for i, card in enumerate(self.deck.cards):
             x, y = (self.max_width / len(self.deck.cards)) * i, 60
-            if card_index == i:
+            if self._active_card_index == i:
                 y -= 60
             self.image.blit(card_image(self.card_set, card), (x, y))
 
@@ -102,11 +108,17 @@ class MainScreen(Screen):
         self._game_deck = pygame.sprite.Group()
 
         self.card_drawer = Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                                 600, self._all_cards)
+                                 600, self.networking, self._all_cards)
 
         self.background = load_image('images/main.png')
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
         self.error_font.fgcolor = pygame.color.Color('White')
+
+    def _handle_events(self, events: list[Event]):
+        for event in events:
+            match event.type:
+                case pygame.MOUSEBUTTONDOWN:
+                    self.card_drawer.handle_mousedown(event)
 
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
@@ -114,4 +126,5 @@ class MainScreen(Screen):
         self._miscellaneous_group.update()
         self._all_cards.draw(self.surface)
         self._all_cards.update()
+        self._handle_events(events)
         return self.is_running
