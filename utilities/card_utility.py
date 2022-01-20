@@ -1,13 +1,27 @@
 from random import choice
 
-from pygame.color import Color
 from pygame.surface import Surface
 
 from classes.cards.card import Card
 from classes.cards.numeric_card import NumericCard
-from classes.enums.colors import Colors
-from classes.cards.special_cards import SkipCard, ReverseCard, GetTwoCard, SpecialCard
+from classes.cards.special_cards import SkipCard, ReverseCard, GetTwoCard
 from classes.cards.wild_cards import WildChangeColorCard, WildGetFourCard
+from classes.enums.colors import Colors
+
+_CARD_ID = {
+    SkipCard: 10,
+    ReverseCard: 11,
+    GetTwoCard: 12,
+    WildChangeColorCard: 13,
+    WildGetFourCard: 14,
+}
+
+_CARD_COLOR = {
+    Colors.RED: 0,
+    Colors.YELLOW: 1,
+    Colors.GREEN: 2,
+    Colors.BLUE: 3,
+}
 
 CARDS = []
 
@@ -27,3 +41,19 @@ for i in range(4):
 
 def random_cards(amount=1) -> list[Card]:
     return [choice(CARDS) for _ in range(amount)]
+
+
+def card_image(card_set: Surface, card) -> Surface:
+    if isinstance(card, NumericCard):
+        image = card_set.subsurface(120 * card.number,
+                                    180 * _CARD_COLOR[card.color],
+                                    120, 180)
+    elif isinstance(card, WildChangeColorCard):
+        image = card_set.subsurface(120 * 13, 0, 120, 180)
+    elif isinstance(card, WildGetFourCard):
+        image = card_set.subsurface(120 * 13, 180, 120, 180)
+    else:
+        image = card_set.subsurface(120 * _CARD_ID[card.__class__],
+                                    180 * _CARD_COLOR[card.color],
+                                    120, 180)
+    return image
