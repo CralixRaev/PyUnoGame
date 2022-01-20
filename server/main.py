@@ -139,5 +139,5 @@ class Server:
 
 
 if __name__ == '__main__':
-    server = Server(address='172.31.146.54')
+    server = Server(address='127.0.0.1')
     server.mainloop()

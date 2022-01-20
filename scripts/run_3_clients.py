@@ -9,7 +9,7 @@ processes = []
 def thread(num):
     print(os.getcwd())
     process = subprocess.run(
-        ['../venv/bin/python3',
+        ['../venv/Scripts/python.exe',
          '../client/main.py', f'user{num}',
          'pass'],
         capture_output=True)

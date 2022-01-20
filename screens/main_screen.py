@@ -16,19 +16,34 @@ from utilities.card_utility import card_image
 from utilities.image_utility import load_image
 
 
-class CardsDrawer:
-    def __init__(self, deck: PlayerDeck, max_width: int = 600, is_blank: bool = False):
+class Cards(pygame.sprite.Sprite):
+    def __init__(self, deck: PlayerDeck, x, y, *groups: AbstractGroup, max_width: int = 600,
+                 is_blank: bool = False):
+        super().__init__(*groups)
         self.deck = deck
         self.max_width = max_width
         self.is_blank = is_blank
-        self.image = Surface((self.max_width, 120))
+        self.rect = pygame.rect.Rect(x, y - 60, self.max_width, 240)
+        self.image = Surface((self.max_width + 120, 180), pygame.SRCALPHA, 32)
+        self.image.convert_alpha()
         self.card_set = load_image('images/cards.png')
 
-    def draw(self) -> Surface:
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        self.image.fill((0, 0, 0, 0))
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        # this is the most elegant solution what i can think of (and very fast solution too)
+        if self.rect.collidepoint(mouse_x, mouse_y):
+            # coordinates regarding our sprite
+            mouse_x -= self.rect.x
+            card_index = mouse_x // (self.max_width / len(self.deck.cards))
+        else:
+            card_index = -1
         for i, card in enumerate(self.deck.cards):
-            self.image.blit(card_image(self.card_set, card),
-                            (self.max_width / len(self.deck.cards) * i, 0), )
-        return self.image
+            x, y = (self.max_width / len(self.deck.cards)) * i, 60
+            if card_index == i:
+                y -= 60
+            self.image.blit(card_image(self.card_set, card), (x, y))
+
 
 class DirectionSprite(pygame.sprite.Sprite):
     def __init__(self, game: Game, *groups: AbstractGroup):
@@ -86,6 +101,9 @@ class MainScreen(Screen):
         self._all_cards = pygame.sprite.Group()
         self._game_deck = pygame.sprite.Group()
 
+        self.card_drawer = Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
+                                 600, self._all_cards)
+
         self.background = load_image('images/main.png')
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
         self.error_font.fgcolor = pygame.color.Color('White')
@@ -94,7 +112,6 @@ class MainScreen(Screen):
         self.surface.blit(self.background, dest=(0, 0))
         self._miscellaneous_group.draw(self.surface)
         self._miscellaneous_group.update()
-        # print(self.networking.current_game.deck.cards)
         self._all_cards.draw(self.surface)
         self._all_cards.update()
         return self.is_running
