@@ -6,7 +6,7 @@ from utilities.card_utility import random_cards
 
 class GameDeck:
     """
-    Игровая стопка карт.
+    Игровая колода карт.
     """
 
     def __init__(self, maxsize: int = 1):

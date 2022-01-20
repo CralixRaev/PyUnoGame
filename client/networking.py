@@ -3,8 +3,6 @@ import socket
 
 from classes.auth.exceptions import WrongCredentials
 from classes.auth.user import User
-# data = {'type': 'register', 'username': 'user', 'password': 'test'}
-# data = {'type': 'login', 'username': 'user', 'password': 'test'}
 from classes.decks.game_deck import GameDeck
 from classes.game.game import Game
 
