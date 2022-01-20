@@ -17,7 +17,7 @@ class PlayerDeck:
 
     def pop(self, index: int) -> Card:
         return self.cards.pop(index)
-    a
+
     def random_cards(self, amount: int = 1):
         self.cards += random_cards(amount=amount)
 
