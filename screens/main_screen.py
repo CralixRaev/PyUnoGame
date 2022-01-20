@@ -7,6 +7,7 @@ from pygame.event import Event
 from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
+from classes.decks.game_deck import GameDeck
 from classes.decks.player_deck import PlayerDeck
 from classes.enums.directions import Directions
 from classes.game.game import Game
@@ -49,6 +50,19 @@ class Cards(pygame.sprite.Sprite):
             if self._active_card_index == i:
                 y -= 60
             self.image.blit(card_image(self.card_set, card), (x, y))
+
+
+class GameCards(pygame.sprite.Sprite):
+    def __init__(self, deck: GameDeck, x, y, *groups: AbstractGroup):
+        super().__init__(*groups)
+        self.deck = deck
+        self.rect = pygame.rect.Rect(x, y, 120, 180)
+        self.card_set = load_image('images/cards.png')
+        self.image = card_image(self.card_set, self.deck.cards[0])
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: draw multiple cards, with various rotation and another pretty things
+        self.image = card_image(self.card_set, self.deck.cards[0])
 
 
 class DirectionSprite(pygame.sprite.Sprite):
@@ -107,8 +121,18 @@ class MainScreen(Screen):
         self._all_cards = pygame.sprite.Group()
         self._game_deck = pygame.sprite.Group()
 
-        self.card_drawer = Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                                 600, self.networking, self._all_cards)
+        self._cards = {
+            'self': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
+                          600, self.networking, self._all_cards),
+            'right': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
+                           600, self.networking),
+            'left': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
+                          600, self.networking),
+            'opposite': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
+                              600, self.networking),
+        }
+
+        self._game_cards = GameCards(self.networking.current_game.deck, 640 - 60, 360 - 90, self._all_cards)
 
         self.background = load_image('images/main.png')
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
@@ -118,7 +142,7 @@ class MainScreen(Screen):
         for event in events:
             match event.type:
                 case pygame.MOUSEBUTTONDOWN:
-                    self.card_drawer.handle_mousedown(event)
+                    self._cards['self'].handle_mousedown(event)
 
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
