@@ -51,13 +51,16 @@ class Networking:
         self.sock.sendall(pickle.dumps(data))
         self.current_game = pickle.loads(self.sock.recv(2048))
 
-    def throw_card(self, card: Card) -> bool:
-        data = {'type': 'throw', 'card': card}
+    def throw_card(self, card_index: int) -> bool:
+        data = {'type': 'throw', 'card': card_index}
         self.sock.sendall(pickle.dumps(data))
         return pickle.loads(self.sock.recv(2048))
 
     def get_user_from_game(self) -> User:
         return [user for user in self.current_game.users if user.id == self.authorized_user.id][0]
+
+    def user_id(self, user) -> int:
+        return self.current_game.users.index(user)
 
     def __del__(self):
         self.sock.close()

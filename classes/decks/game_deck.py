@@ -21,9 +21,10 @@ class GameDeck:
         # этого номинала
         self.cards = deque([], maxsize)
 
-    def append_card(self, card: Card) -> None | bool:
+    def append_card(self, card: Card) -> bool:
         if card.possible_move(self.cards[0]):
             self.cards.appendleft(card)
+            return True
         else:
             return False  # почему не исключение?
             # т.к. эта вещь будет проверяться при каждой попытке добавить карту игроком, то тут

@@ -84,11 +84,11 @@ class Server:
         pass
         # match data["update_type"]:
 
-    def __throw(self, card) -> bool:
-        if self.current_game.deck.append_card(card):
-            return True
-        else:
-            return False
+    def __throw(self, user, card: int) -> bool:
+        result = self.current_game.deck.append_card(user.deck.cards[card])
+        if result:
+            user.deck.cards.pop(card)
+        return result
 
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
         authorization = Authorization('../database.db')
@@ -121,8 +121,11 @@ class Server:
                     answer = self.__fetch()
                 case "throw":
                     print('throwing a card')
-                    answer = self.__throw(loaded_data['card'])
+                    answer = self.__throw(self._user_by_address(address), loaded_data['card'])
             sock.sendall(pickle.dumps(answer))
+
+    def _user_by_address(self, address: tuple[str, int]):
+        return [user for user in self.current_game.users if user.address == address][0]
 
     def mainloop(self, client_thread: Callable = None) -> NoReturn:
         if not client_thread:
