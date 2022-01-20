@@ -19,17 +19,21 @@ from utilities.image_utility import load_image
 
 class Cards(pygame.sprite.Sprite):
     def __init__(self, deck: PlayerDeck, x, y, networking: Networking, *groups: AbstractGroup,
-                 max_width: int = 600, is_blank: bool = False):
+                 max_width: int = 600, is_blank: bool = True, rotation: int = 0):
         super().__init__(*groups)
         self.deck = deck
         self.networking = networking
         self.max_width = max_width
         self.is_blank = is_blank
-        self.rect = pygame.rect.Rect(x, y - 60, self.max_width, 240)
-        self.image = Surface((self.max_width + 120, 180), pygame.SRCALPHA, 32)
+        self.image = pygame.transform.rotate(
+            Surface((self.max_width + 120, 180), pygame.SRCALPHA, 32), rotation)
         self.image.convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
         self.card_set = load_image('images/cards.png')
         self._active_card_index = -1
+        self.rotation = rotation
 
     def handle_mousedown(self, event):
         if self._active_card_index >= 0:
@@ -37,19 +41,25 @@ class Cards(pygame.sprite.Sprite):
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.image.fill((0, 0, 0, 0))
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        # this is the most elegant solution what i can think of (and very fast solution too)
-        if self.rect.collidepoint(mouse_x, mouse_y):
-            # coordinates regarding our sprite
-            mouse_x -= self.rect.x
-            self._active_card_index = int(mouse_x // (self.max_width / len(self.deck.cards)))
-        else:
-            self._active_card_index = -1
+        if not self.is_blank:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            # this is the most elegant solution what i can think of (and very fast solution too)
+            if self.rect.collidepoint(mouse_x, mouse_y):
+                # coordinates regarding our sprite
+                mouse_x -= self.rect.x
+                self._active_card_index = int(mouse_x // (self.max_width / len(self.deck.cards)))
+            else:
+                self._active_card_index = -1
         for i, card in enumerate(self.deck.cards):
-            x, y = (self.max_width / len(self.deck.cards)) * i, 60
-            if self._active_card_index == i:
+            image = pygame.transform.rotate(
+                card_image(self.card_set, card) if not self.is_blank else load_image(
+                    'images/blank_card.png'), self.rotation)
+            x, y = (self.max_width / len(self.deck.cards)) * i, 60 if not self.is_blank else 0
+            if not self.is_blank and self._active_card_index == i:
                 y -= 60
-            self.image.blit(card_image(self.card_set, card), (x, y))
+            if self.rotation // 90 % 2 != 0:
+                x, y = y, x
+            self.image.blit(image, (x, y))
 
 
 class GameCards(pygame.sprite.Sprite):
@@ -121,18 +131,23 @@ class MainScreen(Screen):
         self._all_cards = pygame.sprite.Group()
         self._game_deck = pygame.sprite.Group()
 
+        self._player_indexes = _PLAYER_INDEXES[self.networking.current_game.users.index(
+            self.networking.get_user_from_game())]
+
         self._cards = {
-            'self': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                          600, self.networking, self._all_cards),
-            'right': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                           600, self.networking),
-            'left': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                          600, self.networking),
-            'opposite': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300,
-                              600, self.networking),
+            'self': Cards(self.networking.get_user_from_game().deck, (1280 / 2) - 300, 600,
+                          self.networking, self._all_cards, is_blank=False),
+            'right': Cards(self.networking.current_game.users[self._player_indexes['right']].deck,
+                           1160, 160, self.networking, self._all_cards, rotation=270, max_width=320),
+            'left': Cards(self.networking.current_game.users[self._player_indexes['left']].deck,
+                          -60, 160, self.networking, self._all_cards, rotation=90, max_width=320),
+            'opposite': Cards(
+                self.networking.current_game.users[self._player_indexes['opposite']].deck,
+                (1280 / 2) - 195, -60, self.networking, self._all_cards, rotation=180, max_width=320)
         }
 
-        self._game_cards = GameCards(self.networking.current_game.deck, 640 - 60, 360 - 90, self._all_cards)
+        self._game_cards = GameCards(self.networking.current_game.deck, 640 - 60, 360 - 90,
+                                     self._all_cards)
 
         self.background = load_image('images/main.png')
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
