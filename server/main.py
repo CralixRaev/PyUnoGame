@@ -94,6 +94,10 @@ class Server:
             self.current_game.next_player()
         return result
 
+    def __get_card(self, user) -> bool:
+        user.deck.random_cards()
+        return True
+
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
         authorization = Authorization('../database.db')
         while True:
@@ -125,6 +129,8 @@ class Server:
                     answer = self.__fetch()
                 case "throw":
                     answer = self.__throw(self._user_by_address(address), loaded_data['card'])
+                case "get_card":
+                    answer = self.__get_card(self._user_by_address(address))
             sock.sendall(pickle.dumps(answer))
 
     def _user_by_address(self, address: tuple[str, int]):

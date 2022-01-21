@@ -8,8 +8,8 @@ from pygame_gui.elements import UITextEntryLine, UIButton
 from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.lobby_screen import LobbyScreen
-from utilities.text_utility import text_on_center, center_rect
 from utilities.image_utility import load_image
+from utilities.text_utility import text_on_center, center_rect
 
 
 class StartScreen(Screen):
@@ -24,6 +24,7 @@ class StartScreen(Screen):
 
         self.error_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
         self.error_font.fgcolor = pygame.color.Color('Red')
+
         self.error_font.bgcolor = pygame.color.Color('Black')
 
         rect = pygame.Rect((0, 300), (250, 50))
@@ -63,7 +64,6 @@ class StartScreen(Screen):
         self.surface.blit(self.overlay, dest=(0, 0))
         if self.error_message:
             text_on_center(self.surface, self.error_font, f"Произошла ошибка: {self.error_message}",
-                            650)
+                           650)
         self._handle_events(events)
         return self.is_running
-

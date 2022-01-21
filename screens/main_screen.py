@@ -15,6 +15,16 @@ from utilities.card_utility import card_image
 from utilities.image_utility import load_image
 
 
+class EventGroup(pygame.sprite.Group):
+    def __init__(self, *sprites):
+        super().__init__(*sprites)
+
+    def handle_events(self, events):
+        for sprite in self.sprites():
+            if hasattr(sprite, 'handle_events'):
+                sprite.handle_events(events)
+
+
 class UserInfo(pygame.sprite.Sprite):
     def __init__(self, x, y, networking: Networking, user_index: int, *groups: AbstractGroup):
         super().__init__(*groups)
@@ -39,6 +49,25 @@ class UserInfo(pygame.sprite.Sprite):
                             self.networking.current_game.users[self.user_index].name)
 
 
+class CardGiver(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int, networking: Networking, *groups: AbstractGroup):
+        super().__init__(*groups)
+        self.networking = networking
+        self.rect = pygame.rect.Rect(x, y, 150, 150)
+        self.image = Surface((150, 150))
+        pygame.draw.rect(self.image, (0, 0, 0), self.rect, 1)
+
+    def handle_events(self, events):
+        for event in events:
+            match event.type:
+                case pygame.MOUSEBUTTONDOWN:
+                    if self.rect.collidepoint(pygame.mouse.get_pos()):
+                        game = self.networking.current_game
+                        if game.cur_user_index == self.networking.user_id(
+                                self.networking.get_user_from_game()):
+                            self.networking.get_card()
+
+
 class Cards(pygame.sprite.Sprite):
     def __init__(self, user_id: int, x, y, networking: Networking, *groups: AbstractGroup,
                  max_width: int = 600, is_blank: bool = True, rotation: int = 0):
@@ -57,12 +86,16 @@ class Cards(pygame.sprite.Sprite):
         self._active_card_index = -1
         self.rotation = rotation
 
-    def handle_mousedown(self, event):
-        if self._active_card_index >= 0 and \
-                self.networking.current_game.cur_user_index == self.user_id:
-            print(self.networking.throw_card(self._active_card_index))
-        else:
-            pass  # TODO: play some sound when you cant throw a card (cause it is not your way)
+    def handle_events(self, events):
+        for event in events:
+            match event.type:
+                case pygame.MOUSEBUTTONDOWN:
+                    if self._active_card_index >= 0 and \
+                            self.networking.current_game.cur_user_index == self.user_id:
+                        print(self.networking.throw_card(self._active_card_index))
+                    else:
+                        pass  # TODO: play some sound when you cant throw a card
+                        # (cause it is not your way)
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         deck = self.networking.current_game.users[self.user_id].deck
@@ -153,11 +186,13 @@ class MainScreen(Screen):
         super().__init__(surface, manager, networking)
         self.next_screen = None
 
-        self._miscellaneous_group = pygame.sprite.Group()
+        self._miscellaneous_group = EventGroup()
         DirectionSprite(self.networking.current_game, self._miscellaneous_group)
 
-        self._all_cards = pygame.sprite.Group()
+        self._all_cards = EventGroup()
         self._game_deck = pygame.sprite.Group()
+
+        self._card_giver = CardGiver(100, 100, self.networking, self._miscellaneous_group)
 
         self._player_indexes = _PLAYER_INDEXES[self.networking.current_game.users.index(
             self.networking.get_user_from_game())]
@@ -190,16 +225,15 @@ class MainScreen(Screen):
         self.error_font.fgcolor = pygame.color.Color('White')
 
     def _handle_events(self, events: list[Event]):
-        for event in events:
-            match event.type:
-                case pygame.MOUSEBUTTONDOWN:
-                    self._cards['self'].handle_mousedown(event)
+        pass
 
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
-        self._miscellaneous_group.draw(self.surface)
-        self._miscellaneous_group.update()
         self._all_cards.draw(self.surface)
         self._all_cards.update()
+        self._all_cards.handle_events(events)
+        self._miscellaneous_group.draw(self.surface)
+        self._miscellaneous_group.update()
+        self._miscellaneous_group.handle_events(events)
         self._handle_events(events)
         return self.is_running
