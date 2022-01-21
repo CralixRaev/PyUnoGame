@@ -8,7 +8,6 @@ from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
 from classes.enums.directions import Directions
-from classes.game.game import Game
 from client.networking import Networking
 from screens.abc_screen import Screen
 from utilities.card_utility import card_image
@@ -137,17 +136,17 @@ class GameCards(pygame.sprite.Sprite):
 
 
 class DirectionSprite(pygame.sprite.Sprite):
-    def __init__(self, game: Game, *groups: AbstractGroup):
+    def __init__(self, networking: Networking, *groups: AbstractGroup):
         super().__init__(*groups)
+        self.networking = networking
         self._clockwise = load_image('images/main_direction_clockwise.png')
-        self._counterclockwise = load_image('images/main_direction_clockwise.png')
+        self._counterclockwise = load_image('images/main_direction_counterclockwise.png')
         self.image = self._clockwise
-        self.game = game
         self.rect = self.image.get_rect()
         self.rect.center = (640, 360)
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        if self.game.direction == Directions.CLOCKWISE:
+        if self.networking.current_game.direction == Directions.CLOCKWISE:
             self.image = self._clockwise
         else:
             self.image = self._counterclockwise
@@ -187,7 +186,7 @@ class MainScreen(Screen):
         self.next_screen = None
 
         self._miscellaneous_group = EventGroup()
-        DirectionSprite(self.networking.current_game, self._miscellaneous_group)
+        DirectionSprite(self.networking, self._miscellaneous_group)
 
         self._all_cards = EventGroup()
         self._game_deck = pygame.sprite.Group()
