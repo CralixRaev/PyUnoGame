@@ -10,16 +10,14 @@ class PlayerDeck:
 
     def append(self, card: Card):
         self.cards.append(card)
-        self.cards.sort()  # this is such a bullshit what doesn't work, i know
+        self.cards.sort()  # намного быстрее отсортировать один раз при добавлении,
+        # чем много раз при каждой отрисовки
 
     def init_random(self):
         self.cards = random_cards(amount=7)
 
     def pop(self, index: int) -> Card:
         return self.cards.pop(index)
-
-    def random_cards(self, amount: int = 1):
-        self.cards += random_cards(amount=amount)
 
     def __len__(self) -> int:
         return len(self.cards)
