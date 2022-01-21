@@ -3,6 +3,7 @@ from __future__ import annotations  # вроде 3.10, а эту хрень та
 from dataclasses import dataclass, field
 
 from classes.enums.colors import Colors
+from classes.game.game import Game
 
 
 @dataclass
@@ -15,3 +16,7 @@ class Card:
             return True
         else:
             return False
+
+    @staticmethod
+    def move(game: Game):
+        pass
