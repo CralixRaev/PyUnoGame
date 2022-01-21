@@ -7,14 +7,36 @@ from pygame.event import Event
 from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
-from classes.decks.game_deck import GameDeck
-from classes.decks.player_deck import PlayerDeck
 from classes.enums.directions import Directions
 from classes.game.game import Game
 from client.networking import Networking
 from screens.abc_screen import Screen
 from utilities.card_utility import card_image
 from utilities.image_utility import load_image
+
+
+class UserInfo(pygame.sprite.Sprite):
+    def __init__(self, x, y, networking: Networking, user_index: int, *groups: AbstractGroup):
+        super().__init__(*groups)
+        self.networking = networking
+        self.user_index = user_index
+        self.font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.font.fgcolor = pygame.color.Color('White')
+        self.font.bgcolor = pygame.color.Color('Black')
+        self.image = pygame.surface.Surface((200, 100), pygame.SRCALPHA, 32)
+        self.image.convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        if self.networking.current_game.cur_user_index == self.user_index:
+            self.font.bgcolor = pygame.color.Color('BLUE')
+        else:
+            self.font.bgcolor = pygame.color.Color('Black')
+        self.image.fill((0, 0, 0, 0))
+        self.font.render_to(self.image, (0, 0),
+                            self.networking.current_game.users[self.user_index].name)
 
 
 class Cards(pygame.sprite.Sprite):
@@ -36,8 +58,11 @@ class Cards(pygame.sprite.Sprite):
         self.rotation = rotation
 
     def handle_mousedown(self, event):
-        if self._active_card_index >= 0:
+        if self._active_card_index >= 0 and \
+                self.networking.current_game.cur_user_index == self.user_id:
             print(self.networking.throw_card(self._active_card_index))
+        else:
+            pass  # TODO: play some sound when you cant throw a card (cause it is not your way)
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         deck = self.networking.current_game.users[self.user_id].deck
@@ -138,18 +163,25 @@ class MainScreen(Screen):
             self.networking.get_user_from_game())]
 
         self._cards = {
-            'self': Cards(self.networking.user_id(self.networking.get_user_from_game()),
-                          (1280 / 2) - 300, 600,
-                          self.networking, self._all_cards, is_blank=False),
-            'right': Cards(self._player_indexes['right'],
-                           1160, 160, self.networking, self._all_cards, rotation=270, max_width=320),
-            'left': Cards(self._player_indexes['left'],
-                          -60, 160, self.networking, self._all_cards, rotation=90, max_width=320),
-            'opposite': Cards(
-                self._player_indexes['opposite'],
-                (1280 / 2) - 195, -60, self.networking, self._all_cards, rotation=180, max_width=320)
+            'self': Cards(self._player_indexes['self'], (1280 / 2) - 300, 600, self.networking,
+                          self._all_cards, is_blank=False),
+            'right': Cards(self._player_indexes['right'], 1160, 160, self.networking,
+                           self._all_cards, rotation=270, max_width=320),
+            'left': Cards(self._player_indexes['left'], -60, 160, self.networking, self._all_cards,
+                          rotation=90, max_width=320),
+            'opposite': Cards(self._player_indexes['opposite'], (1280 / 2) - 195, -60,
+                              self.networking, self._all_cards, rotation=180, max_width=320)
         }
-
+        self._users_names = {
+            'self': UserInfo(300, 500, self.networking, self._player_indexes['self'],
+                             self._miscellaneous_group),
+            'right': UserInfo(1000, 120, self.networking, self._player_indexes['right'],
+                              self._miscellaneous_group),
+            'left': UserInfo(60, 120, self.networking, self._player_indexes['left'],
+                             self._miscellaneous_group),
+            'opposite': UserInfo(300, 50, self.networking, self._player_indexes['opposite'],
+                                 self._miscellaneous_group),
+        }
         self._game_cards = GameCards(self.networking, 640 - 60, 360 - 90,
                                      self._all_cards)
 

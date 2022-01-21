@@ -85,9 +85,13 @@ class Server:
         # match data["update_type"]:
 
     def __throw(self, user, card: int) -> bool:
+        card_object = user.deck.cards[card]
         result = self.current_game.deck.append_card(user.deck.cards[card])
         if result:
+            card_object.move(self.current_game)
             user.deck.cards.pop(card)
+            print(self.current_game.cur_user_index)
+            self.current_game.next_player()
         return result
 
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
@@ -120,7 +124,6 @@ class Server:
                     self.__update(loaded_data)
                     answer = self.__fetch()
                 case "throw":
-                    print('throwing a card')
                     answer = self.__throw(self._user_by_address(address), loaded_data['card'])
             sock.sendall(pickle.dumps(answer))
 

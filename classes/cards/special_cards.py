@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
 from classes.cards.card import Card
+from classes.enums.directions import Directions
+from classes.game.game import Game
 
 
 @dataclass
@@ -17,14 +19,24 @@ class SpecialCard(Card):
 
 @dataclass
 class GetTwoCard(SpecialCard):
-    pass
+    @staticmethod
+    def move(game: Game):
+        if game.direction == Directions.CLOCKWISE:
+            game.users[game.cur_user_index + 1].deck.random_cards(2)
 
 
 @dataclass
 class ReverseCard(SpecialCard):
-    pass
+    @staticmethod
+    def move(game: Game):
+        if game.direction == Directions.CLOCKWISE:
+            game.direction = Directions.COUNTER_CLOCKWISE
+        else:
+            game.direction = Directions.CLOCKWISE
 
 
 @dataclass
 class SkipCard(SpecialCard):
-    pass
+    @staticmethod
+    def move(game: Game):
+        game.next_player()
