@@ -12,6 +12,7 @@ from client.networking import Networking
 from screens.abc_screen import Screen
 from utilities.card_utility import card_image
 from utilities.image_utility import load_image
+from utilities.text_utility import truncate
 
 
 class EventGroup(pygame.sprite.Group):
@@ -29,42 +30,60 @@ class UserInfo(pygame.sprite.Sprite):
         super().__init__(*groups)
         self.networking = networking
         self.user_index = user_index
-        self.font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
-        self.font.fgcolor = pygame.color.Color('White')
-        self.font.bgcolor = pygame.color.Color('Black')
-        self.image = pygame.surface.Surface((200, 100), pygame.SRCALPHA, 32)
+        self.name_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.name_font.fgcolor = pygame.color.Color('White')
+        self.cards_amount_font = pygame.freetype.Font('../assets/fonts/Roboto-Regular.ttf', 20)
+        self.cards_amount_font.fgcolor = pygame.color.Color('Black')
+        # self.font.bgcolor = pygame.color.Color('Black')
+        self._background = load_image('images/player_info.png')
+        self._active_background = load_image('images/player_info_active.png')
+        size = self._background.get_width() + 100, self._background.get_height()
+        self.image = Surface(size, pygame.SRCALPHA, 32)
         self.image.convert_alpha()
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        self.rect = pygame.rect.Rect(x, y, *size)
 
     def update(self):
-        if self.networking.current_game.cur_user_index == self.user_index:
-            self.font.bgcolor = pygame.color.Color('BLUE')
-        else:
-            self.font.bgcolor = pygame.color.Color('Black')
         self.image.fill((0, 0, 0, 0))
-        self.font.render_to(self.image, (0, 0),
-                            self.networking.current_game.users[self.user_index].name)
+        if self.networking.current_game.cur_user_index == self.user_index:
+            self.image.blit(self._active_background, (0, 0))
+        else:
+            self.image.blit(self._background, (0, 0))
+        self.name_font.render_to(self.image, (5, 102),
+                                 truncate(self.networking.current_game.users[self.user_index].name))
+        self.cards_amount_font.render_to(self.image, (110, 102),
+                                         str(len(self.networking.current_game.users[
+                                                     self.user_index].deck.cards)))
 
 
 class CardGiver(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, networking: Networking, *groups: AbstractGroup):
         super().__init__(*groups)
         self.networking = networking
-        self.rect = pygame.rect.Rect(x, y, 150, 150)
-        self.image = Surface((150, 150))
-        pygame.draw.rect(self.image, (0, 0, 0), self.rect, 1)
+        self._active = load_image('images/deck_active.png')
+        self._non_active = load_image('images/deck.png')
+        self.image = self._active
+        self.rect = self.image.get_rect()
+        self.is_active = False
+        self.rect.x = x
+        self.rect.y = y
 
     def handle_events(self, events):
         for event in events:
             match event.type:
                 case pygame.MOUSEBUTTONDOWN:
-                    if self.rect.collidepoint(pygame.mouse.get_pos()):
+                    if self.is_active:
                         game = self.networking.current_game
                         if game.cur_user_index == self.networking.user_id(
                                 self.networking.get_user_from_game()):
                             self.networking.get_card()
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        if self.rect.collidepoint(pygame.mouse.get_pos()):
+            self.image = self._active
+            self.is_active = True
+        else:
+            self.is_active = False
+            self.image = self._non_active
 
 
 class Cards(pygame.sprite.Sprite):
@@ -191,7 +210,7 @@ class MainScreen(Screen):
         self._all_cards = EventGroup()
         self._game_deck = pygame.sprite.Group()
 
-        self._card_giver = CardGiver(100, 100, self.networking, self._miscellaneous_group)
+        self._card_giver = CardGiver(175, 20, self.networking, self._miscellaneous_group)
 
         self._player_indexes = _PLAYER_INDEXES[self.networking.current_game.users.index(
             self.networking.get_user_from_game())]
