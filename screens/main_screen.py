@@ -188,7 +188,10 @@ class Cards(pygame.sprite.Sprite):
                 if self.rotation // 90 % 2 != 0:
                     x, y = y, x
                 self.image.blit(image, (x, y))
-        except ZeroDivisionError:  # this exception will happen ONLY ONCE, when somebody has 0 cards
+            if not deck.cards:
+                raise ValueError
+        except (ZeroDivisionError, ValueError):
+            # this exception will happen ONLY ONCE, when somebody has 0 cards
             # i know, that is strange solution, but trust me
             # this is just prototype, hehehe
             pygame.event.post(Event(self.CARD_END))

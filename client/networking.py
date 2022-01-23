@@ -59,6 +59,11 @@ class Networking:
         self.sock.sendall(pickle.dumps(data))
         return pickle.loads(self.sock.recv(2048))
 
+    def add_points(self, amount: int = 0) -> bool:
+        data = {'type': 'add_points', 'amount': amount}
+        self.sock.sendall(pickle.dumps(data))
+        return pickle.loads(self.sock.recv(2048))
+
     def get_user_from_game(self) -> User:
         return [user for user in self.current_game.users if user.id == self.authorized_user.id][0]
 

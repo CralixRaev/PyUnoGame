@@ -107,6 +107,10 @@ class Server:
         user.deck.random_cards()
         return True
 
+    def __add_points(self, auth: Authorization, user, amount=0) -> bool:
+        auth.add_points(user.id, amount)
+        return True
+
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
         authorization = Authorization('../database.db')
         while True:
@@ -141,6 +145,9 @@ class Server:
                                           loaded_data['ignore'])
                 case "get_card":
                     answer = self.__get_card(self._user_by_address(address))
+                case "add_points":
+                    answer = self.__add_points(authorization, self._user_by_address(address),
+                                               loaded_data['amount'])
             sock.sendall(pickle.dumps(answer))
 
     def _user_by_address(self, address: tuple[str, int]):

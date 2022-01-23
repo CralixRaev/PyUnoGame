@@ -9,6 +9,7 @@ class User:
     name: str
     address: tuple[str, int] = None
     deck: PlayerDeck = None
+    points: int = 0
 
     def __post_init__(self):
         self.deck = PlayerDeck()

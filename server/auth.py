@@ -25,10 +25,15 @@ class Authorization:
         user = cursor.execute("""SELECT * FROM users WHERE name=?""", (username,)).fetchone()
         if not user:
             raise WrongCredentials("Нет такого пользователя")
-        user_id, name, password_hash = user
+        user_id, name, password_hash, points = user
         if not password_utility.check_password(password, password_hash):
             raise WrongCredentials("Неправильный пароль")
-        return User(user_id, name)
+        return User(user_id, name, points=points)
+
+    def add_points(self, user_id: int, amount: int):
+        cursor = self.db.cursor()
+        cursor.execute("""UPDATE users SET points = ? WHERE users.id = ?""", (amount, user_id))
+        self.db.commit()
 
     def __del__(self):
         self.db.close()
