@@ -226,13 +226,13 @@ class MainScreen(Screen):
                               self.networking, self._all_cards, rotation=180, max_width=320)
         }
         self._users_names = {
-            'self': UserInfo(300, 500, self.networking, self._player_indexes['self'],
+            'self': UserInfo(169, 533, self.networking, self._player_indexes['self'],
                              self._miscellaneous_group),
-            'right': UserInfo(1000, 120, self.networking, self._player_indexes['right'],
+            'right': UserInfo(927, 294, self.networking, self._player_indexes['right'],
                               self._miscellaneous_group),
-            'left': UserInfo(60, 120, self.networking, self._player_indexes['left'],
+            'left': UserInfo(274, 170, self.networking, self._player_indexes['left'],
                              self._miscellaneous_group),
-            'opposite': UserInfo(300, 50, self.networking, self._player_indexes['opposite'],
+            'opposite': UserInfo(907, 41, self.networking, self._player_indexes['opposite'],
                                  self._miscellaneous_group),
         }
         self._game_cards = GameCards(self.networking, 640 - 60, 360 - 90,
