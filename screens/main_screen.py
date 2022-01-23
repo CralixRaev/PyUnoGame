@@ -7,6 +7,7 @@ from pygame.event import Event
 from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
+from classes.cards.wild_cards import WildChangeColorCard
 from classes.enums.directions import Directions
 from client.networking import Networking
 from screens.abc_screen import Screen
@@ -72,9 +73,7 @@ class CardGiver(pygame.sprite.Sprite):
             match event.type:
                 case pygame.MOUSEBUTTONDOWN:
                     if self.is_active:
-                        game = self.networking.current_game
-                        if game.cur_user_index == self.networking.user_id(
-                                self.networking.get_user_from_game()):
+                        if self.networking.is_our_move:
                             self.networking.get_card()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
@@ -84,6 +83,48 @@ class CardGiver(pygame.sprite.Sprite):
         else:
             self.is_active = False
             self.image = self._non_active
+
+
+class ColorChooser(pygame.sprite.Sprite):
+    def __init__(self, x, y, *groups: AbstractGroup):
+        super().__init__(*groups)
+        self.rect = pygame.rect.Rect(x, y, 206, 206)
+        self.image = pygame.surface.Surface((206, 206), pygame.SRCALPHA, 32)
+        self._active_color = None
+        self._colors = {
+            (0, 0): (load_image('images/color_chooser/red.png'),
+                     load_image('images/color_chooser/red_active.png')),
+            (1, 0): (load_image('images/color_chooser/green.png'),
+                     load_image('images/color_chooser/green_active.png')),
+            (0, 1): (load_image('images/color_chooser/yellow.png'),
+                     load_image('images/color_chooser/yellow_active.png')),
+            (1, 1): (load_image('images/color_chooser/blue.png'),
+                     load_image('images/color_chooser/blue_active.png')),
+        }
+
+    def handle_events(self, events: list[Event]):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self._active_color == self._colors[(0, 0)]:
+                    pass
+                if self._active_color == self._colors[(1, 0)]:
+                    pass
+                if self._active_color == self._colors[(0, 1)]:
+                    pass
+                if self._active_color == self._colors[(1, 1)]:
+                    pass
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        self.image.fill((0, 0, 0, 0))
+        for x in range(2):
+            for y in range(2):
+                rect = pygame.rect.Rect(self.rect.x + x * 103, self.rect.y + y * 103, 103, 103)
+                if rect.collidepoint(pygame.mouse.get_pos()):
+                    self.image.blit(self._colors[(x, y)][1], dest=(x * 103, y * 103))
+                    self._active_color = self._colors[(x, y)]
+                else:
+                    self.image.blit(self._colors[(x, y)][0], dest=(x * 103, y * 103))
+                    self._active_color = None
 
 
 class Cards(pygame.sprite.Sprite):
@@ -109,7 +150,7 @@ class Cards(pygame.sprite.Sprite):
             match event.type:
                 case pygame.MOUSEBUTTONDOWN:
                     if self._active_card_index >= 0 and \
-                            self.networking.current_game.cur_user_index == self.user_id:
+                            self.networking.is_our_move:
                         print(self.networking.throw_card(self._active_card_index))
                     else:
                         pass  # TODO: play some sound when you cant throw a card
@@ -117,7 +158,6 @@ class Cards(pygame.sprite.Sprite):
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         deck = self.networking.current_game.users[self.user_id].deck
-        self.networking.get_user_from_game()
         self.image.fill((0, 0, 0, 0))
         if not self.is_blank:
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -209,11 +249,11 @@ class MainScreen(Screen):
 
         self._all_cards = EventGroup()
         self._game_deck = pygame.sprite.Group()
-
+        self._color_chooser = ColorChooser(540, 260, self._miscellaneous_group)
         self._card_giver = CardGiver(175, 20, self.networking, self._miscellaneous_group)
 
-        self._player_indexes = _PLAYER_INDEXES[self.networking.current_game.users.index(
-            self.networking.get_user_from_game())]
+        self._player_indexes = _PLAYER_INDEXES[
+            self.networking.user_id(self.networking.get_user_from_game())]
 
         self._cards = {
             'self': Cards(self._player_indexes['self'], (1280 / 2) - 300, 600, self.networking,
@@ -247,6 +287,11 @@ class MainScreen(Screen):
 
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
+        if isinstance(self.networking.current_game.deck.cards[0], WildChangeColorCard) and \
+                self.networking.is_our_move:
+            self._color_chooser.add(self._miscellaneous_group)
+        else:
+            self._color_chooser.remove(self._miscellaneous_group)
         self._all_cards.draw(self.surface)
         self._all_cards.update()
         self._all_cards.handle_events(events)

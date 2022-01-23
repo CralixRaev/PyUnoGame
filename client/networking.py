@@ -64,5 +64,9 @@ class Networking:
     def user_id(self, user) -> int:
         return self.current_game.users.index(user)
 
+    @property
+    def is_our_move(self) -> bool:
+        return self.current_game.cur_user_index == self.user_id(self.get_user_from_game())
+
     def __del__(self):
         self.sock.close()

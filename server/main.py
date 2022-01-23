@@ -94,6 +94,7 @@ class Server:
             self.current_game.next_player()
         return result
 
+    @staticmethod
     def __get_card(self, user) -> bool:
         user.deck.random_cards()
         return True
