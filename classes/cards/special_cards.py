@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from classes.cards.card import Card
 from classes.enums.directions import Directions
+from utilities.player_utility import next_player_index
 
 
 @dataclass
@@ -20,8 +21,7 @@ class SpecialCard(Card):
 class GetTwoCard(SpecialCard):
     @staticmethod
     def move(game):
-        if game.direction == Directions.CLOCKWISE:
-            game.users[game.cur_user_index + 1].deck.random_cards(2)
+        game.users[next_player_index(game.cur_user_index, game.direction)].deck.random_cards(2)
 
 
 @dataclass

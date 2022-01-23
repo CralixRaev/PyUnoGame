@@ -7,6 +7,7 @@ from classes.cards.numeric_card import NumericCard
 from classes.cards.special_cards import SkipCard, ReverseCard, GetTwoCard
 from classes.cards.wild_cards import WildChangeColorCard, WildGetFourCard
 from classes.enums.colors import Colors
+from classes.enums.directions import Directions
 
 _CARD_ID = {
     SkipCard: 10,
@@ -23,24 +24,28 @@ _CARD_COLOR = {
     Colors.BLUE: 3,
 }
 
-CARDS = []
+COLOR_CARDS = []
+OTHER_CARDS = []
 
 for i in range(2):
     for color in [Colors.BLUE, Colors.RED, Colors.GREEN, Colors.YELLOW]:
         # карты с номерами
         for num in range(0, 10) if i == 0 else range(1, 10):
-            CARDS.append(NumericCard(color, num))
+            COLOR_CARDS.append(NumericCard(color, num))
         # специальные карты
         for card in [SkipCard, ReverseCard, GetTwoCard]:
-            CARDS.append(card(color))
+            OTHER_CARDS.append(card(color))
 # дикие карты
 for i in range(4):
-    CARDS.append(WildChangeColorCard())
-    CARDS.append(WildGetFourCard())
+    OTHER_CARDS.append(WildChangeColorCard())
+    OTHER_CARDS.append(WildGetFourCard())
 
 
-def random_cards(amount=1) -> list[Card]:
-    return [choice(CARDS) for _ in range(amount)]
+def random_cards(amount=1, color=None) -> list[Card]:
+    if not color:
+        return [choice(COLOR_CARDS + OTHER_CARDS) for _ in range(amount)]
+    else:
+        return [choice([card for card in COLOR_CARDS if card.color == color]) for _ in range(amount)]
 
 
 def card_image(card_set: Surface, card) -> Surface:

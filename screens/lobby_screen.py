@@ -30,7 +30,8 @@ class LobbyScreen(Screen):
             self.font.render_to(self.surface,
                                 (345 * i + 45, 465),
                                 f'{user.name} (Вы)'
-                                if self.networking.authorized_user == user else user.name)
+                                if self.networking.get_user_from_game().address == user.address
+                                else user.name)
         if self.networking.current_game.is_started:
             self.is_running = False
         return self.is_running

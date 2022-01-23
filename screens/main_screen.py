@@ -7,11 +7,13 @@ from pygame.event import Event
 from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
-from classes.cards.wild_cards import WildChangeColorCard
+from classes.cards.wild_cards import WildChangeColorCard, WildGetFourCard
+from classes.enums.colors import Colors
 from classes.enums.directions import Directions
 from client.networking import Networking
 from screens.abc_screen import Screen
-from utilities.card_utility import card_image
+from screens.end_screen import EndScreen
+from utilities.card_utility import card_image, random_cards
 from utilities.image_utility import load_image
 from utilities.text_utility import truncate
 
@@ -86,8 +88,9 @@ class CardGiver(pygame.sprite.Sprite):
 
 
 class ColorChooser(pygame.sprite.Sprite):
-    def __init__(self, x, y, *groups: AbstractGroup):
+    def __init__(self, x, y, networking: Networking, *groups: AbstractGroup):
         super().__init__(*groups)
+        self.networking = networking
         self.rect = pygame.rect.Rect(x, y, 206, 206)
         self.image = pygame.surface.Surface((206, 206), pygame.SRCALPHA, 32)
         self._active_color = None
@@ -105,14 +108,17 @@ class ColorChooser(pygame.sprite.Sprite):
     def handle_events(self, events: list[Event]):
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if self._active_color == self._colors[(0, 0)]:
-                    pass
-                if self._active_color == self._colors[(1, 0)]:
-                    pass
-                if self._active_color == self._colors[(0, 1)]:
-                    pass
-                if self._active_color == self._colors[(1, 1)]:
-                    pass
+                card = None
+                if self._active_color == (0, 0):
+                    card = random_cards(color=Colors.RED)[0]
+                if self._active_color == (1, 0):
+                    card = random_cards(color=Colors.GREEN)[0]
+                if self._active_color == (0, 1):
+                    card = random_cards(color=Colors.YELLOW)[0]
+                if self._active_color == (1, 1):
+                    card = random_cards(color=Colors.BLUE)[0]
+                self.networking.throw_card(card, ignore=True)
+                self.networking.current_game.next_player()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.image.fill((0, 0, 0, 0))
@@ -121,13 +127,15 @@ class ColorChooser(pygame.sprite.Sprite):
                 rect = pygame.rect.Rect(self.rect.x + x * 103, self.rect.y + y * 103, 103, 103)
                 if rect.collidepoint(pygame.mouse.get_pos()):
                     self.image.blit(self._colors[(x, y)][1], dest=(x * 103, y * 103))
-                    self._active_color = self._colors[(x, y)]
+                    print(self._active_color)
+                    self._active_color = (x, y)
                 else:
                     self.image.blit(self._colors[(x, y)][0], dest=(x * 103, y * 103))
-                    self._active_color = None
 
 
 class Cards(pygame.sprite.Sprite):
+    CARD_END = pygame.event.custom_type()
+
     def __init__(self, user_id: int, x, y, networking: Networking, *groups: AbstractGroup,
                  max_width: int = 600, is_blank: bool = True, rotation: int = 0):
         super().__init__(*groups)
@@ -154,30 +162,36 @@ class Cards(pygame.sprite.Sprite):
                         print(self.networking.throw_card(self._active_card_index))
                     else:
                         pass  # TODO: play some sound when you cant throw a card
-                        # (cause it is not your way)
+                        # (because it is not your way)
 
-    def update(self, *args: Any, **kwargs: Any) -> None:
+    def update(self, *args: Any, **kwargs: Any):
         deck = self.networking.current_game.users[self.user_id].deck
+        print(deck.cards)
         self.image.fill((0, 0, 0, 0))
-        if not self.is_blank:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            # this is the most elegant solution what i can think of (and very fast solution too)
-            if self.rect.collidepoint(mouse_x, mouse_y):
-                # coordinates regarding our sprite
-                mouse_x -= self.rect.x
-                self._active_card_index = int(mouse_x // (self.max_width / len(deck.cards)))
-            else:
-                self._active_card_index = -1
-        for i, card in enumerate(deck.cards):
-            image = pygame.transform.rotate(
-                card_image(self.card_set, card) if not self.is_blank else load_image(
-                    'images/blank_card.png'), self.rotation)
-            x, y = (self.max_width / len(deck.cards)) * i, 60 if not self.is_blank else 0
-            if not self.is_blank and self._active_card_index == i:
-                y -= 60
-            if self.rotation // 90 % 2 != 0:
-                x, y = y, x
-            self.image.blit(image, (x, y))
+        try:
+            if not self.is_blank:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                # this is the most elegant solution what i can think of (and very fast solution too)
+                if self.rect.collidepoint(mouse_x, mouse_y):
+                    # coordinates regarding our sprite
+                    mouse_x -= self.rect.x
+                    self._active_card_index = int(mouse_x // (self.max_width / len(deck.cards)))
+                else:
+                    self._active_card_index = -1
+            for i, card in enumerate(deck.cards):
+                image = pygame.transform.rotate(
+                    card_image(self.card_set, card) if not self.is_blank else load_image(
+                        'images/blank_card.png'), self.rotation)
+                x, y = (self.max_width / len(deck.cards)) * i, 60 if not self.is_blank else 0
+                if not self.is_blank and self._active_card_index == i:
+                    y -= 60
+                if self.rotation // 90 % 2 != 0:
+                    x, y = y, x
+                self.image.blit(image, (x, y))
+        except ZeroDivisionError:  # this exception will happen ONLY ONCE, when somebody has 0 cards
+            # i know, that is strange solution, but trust me
+            # this is just prototype, hehehe
+            pygame.event.post(Event(self.CARD_END))
 
 
 class GameCards(pygame.sprite.Sprite):
@@ -242,14 +256,14 @@ _PLAYER_INDEXES = {
 class MainScreen(Screen):
     def __init__(self, surface: Surface, manager: pygame_gui.UIManager, networking: Networking):
         super().__init__(surface, manager, networking)
-        self.next_screen = None
+        self.next_screen = EndScreen
 
         self._miscellaneous_group = EventGroup()
         DirectionSprite(self.networking, self._miscellaneous_group)
 
         self._all_cards = EventGroup()
         self._game_deck = pygame.sprite.Group()
-        self._color_chooser = ColorChooser(540, 260, self._miscellaneous_group)
+        self._color_chooser = ColorChooser(540, 260, networking, self._miscellaneous_group)
         self._card_giver = CardGiver(175, 20, self.networking, self._miscellaneous_group)
 
         self._player_indexes = _PLAYER_INDEXES[
@@ -283,11 +297,14 @@ class MainScreen(Screen):
         self.error_font.fgcolor = pygame.color.Color('White')
 
     def _handle_events(self, events: list[Event]):
-        pass
+        for event in events:
+            if event.type == Cards.CARD_END:
+                self.is_running = False
 
     def run(self, events: list[Event]) -> bool:
         self.surface.blit(self.background, dest=(0, 0))
-        if isinstance(self.networking.current_game.deck.cards[0], WildChangeColorCard) and \
+        if (isinstance(self.networking.current_game.deck.cards[0], WildChangeColorCard) or
+            isinstance(self.networking.current_game.deck.cards[0], WildGetFourCard)) and \
                 self.networking.is_our_move:
             self._color_chooser.add(self._miscellaneous_group)
         else:

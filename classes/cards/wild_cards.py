@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from classes.cards.card import Card
 from classes.enums.colors import Colors
+from utilities.player_utility import next_player_index
 
 
 @dataclass
@@ -17,7 +18,9 @@ class WildCard(Card):
 
 @dataclass
 class WildGetFourCard(WildCard):
-    pass
+    @staticmethod
+    def move(game):
+        game.users[next_player_index(game.cur_user_index, game.direction)].deck.random_cards(4)
 
 
 @dataclass

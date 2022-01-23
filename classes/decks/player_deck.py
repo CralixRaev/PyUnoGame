@@ -10,10 +10,9 @@ class PlayerDeck:
 
     def append(self, card: Card):
         self.cards.append(card)
-        self.cards.sort()  # this is such a bullshit what doesn't work, i know
 
     def init_random(self):
-        self.cards = random_cards(amount=7)
+        self.cards = random_cards(amount=1)
 
     def pop(self, index: int) -> Card:
         return self.cards.pop(index)

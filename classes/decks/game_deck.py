@@ -21,8 +21,8 @@ class GameDeck:
         # этого номинала
         self.cards = deque([], maxsize)
 
-    def append_card(self, card: Card) -> bool:
-        if card.possible_move(self.cards[0]):
+    def append_card(self, card: Card, ignore: bool = False) -> bool:
+        if ignore or card.possible_move(self.cards[0]):
             self.cards.appendleft(card)
             return True
         else:

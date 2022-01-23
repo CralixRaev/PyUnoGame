@@ -3,6 +3,7 @@ import socket
 
 from classes.auth.exceptions import WrongCredentials
 from classes.auth.user import User
+from classes.cards.card import Card
 from classes.decks.game_deck import GameDeck
 from classes.game.game import Game
 
@@ -48,8 +49,8 @@ class Networking:
         self.sock.sendall(pickle.dumps(data))
         self.current_game = pickle.loads(self.sock.recv(4096))
 
-    def throw_card(self, card_index: int) -> bool:
-        data = {'type': 'throw', 'card': card_index}
+    def throw_card(self, card: int | Card, ignore: bool = False) -> bool:
+        data = {'type': 'throw', 'card': card, 'ignore': ignore}
         self.sock.sendall(pickle.dumps(data))
         return pickle.loads(self.sock.recv(2048))
 

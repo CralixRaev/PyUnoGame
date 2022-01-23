@@ -7,6 +7,8 @@ from typing import Callable, NoReturn
 
 from auth import Authorization, WrongCredentials
 from classes.auth.user import User
+from classes.cards.card import Card
+from classes.cards.wild_cards import WildCard, WildChangeColorCard, WildGetFourCard
 from classes.decks.game_deck import GameDeck
 from classes.game.game import Game
 
@@ -84,18 +86,24 @@ class Server:
         pass
         # match data["update_type"]:
 
-    def __throw(self, user, card: int) -> bool:
-        card_object = user.deck.cards[card]
-        result = self.current_game.deck.append_card(user.deck.cards[card])
+    def __throw(self, user, card: int | Card, ignore: bool) -> bool:
+        if type(card) == int:
+            card_object = user.deck.cards[card]
+        else:
+            card_object = card
+        result = self.current_game.deck.append_card(card_object, ignore=ignore)
         if result:
             card_object.move(self.current_game)
-            user.deck.cards.pop(card)
+            if type(card) == int:
+                user.deck.cards.pop(card)
             print(self.current_game.cur_user_index)
-            self.current_game.next_player()
+            if type(card_object) not in [WildChangeColorCard, WildGetFourCard]:
+                # because it will change player after choosing a color
+                self.current_game.next_player()
         return result
 
     @staticmethod
-    def __get_card(self, user) -> bool:
+    def __get_card(user) -> bool:
         user.deck.random_cards()
         return True
 
@@ -129,7 +137,8 @@ class Server:
                     self.__update(loaded_data)
                     answer = self.__fetch()
                 case "throw":
-                    answer = self.__throw(self._user_by_address(address), loaded_data['card'])
+                    answer = self.__throw(self._user_by_address(address), loaded_data['card'],
+                                          loaded_data['ignore'])
                 case "get_card":
                     answer = self.__get_card(self._user_by_address(address))
             sock.sendall(pickle.dumps(answer))
@@ -146,6 +155,8 @@ class Server:
             thread = threading.Thread(target=client_thread, args=(client_socket, client_address))
             self.threads.append(thread)
             thread.start()
+            if self.current_game.is_started:
+                self.current_game.deck.cards[0].move(self.current_game)
 
     def __del__(self):
         self.sock.close()
