@@ -93,6 +93,8 @@ class Server:
             card_object = card
         result = self.current_game.deck.append_card(card_object, ignore=ignore)
         if result:
+            if len(user.deck.cards) == 2 and not user.deck.uno_said:
+                user.deck.random_cards(2)
             card_object.move(self.current_game)
             if type(card) == int:
                 user.deck.cards.pop(card)
@@ -107,8 +109,14 @@ class Server:
         user.deck.random_cards()
         return True
 
+    # this method shouldn't be a static, because then it will be executed in another thread
     def __add_points(self, auth: Authorization, user, amount=0) -> bool:
         auth.add_points(user.id, amount)
+        return True
+
+    @staticmethod
+    def __say_uno(user):
+        user.deck.uno_said = True
         return True
 
     def _client_thread(self, sock: socket.socket, address: tuple[str, int]):
@@ -148,6 +156,8 @@ class Server:
                 case "add_points":
                     answer = self.__add_points(authorization, self._user_by_address(address),
                                                loaded_data['amount'])
+                case "say_uno":
+                    answer = self.__say_uno(self._user_by_address(address))
             sock.sendall(pickle.dumps(answer))
 
     def _user_by_address(self, address: tuple[str, int]):

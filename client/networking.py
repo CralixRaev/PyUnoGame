@@ -64,11 +64,17 @@ class Networking:
         self.sock.sendall(pickle.dumps(data))
         return pickle.loads(self.sock.recv(2048))
 
+    def say_uno(self) -> bool:
+        data = {'type': 'say_uno'}
+        self.sock.sendall(pickle.dumps(data))
+        return pickle.loads(self.sock.recv(2048))
+
     def get_user_from_game(self) -> User:
         return [user for user in self.current_game.users if user.id == self.authorized_user.id][0]
 
     def user_id(self, user) -> int:
         return self.current_game.users.index(user)
+
 
     @property
     def is_our_move(self) -> bool:

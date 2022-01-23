@@ -34,9 +34,11 @@ class UnoButton(pygame.sprite.Sprite):
         self.frames = []
         self.cut_sheet(load_image('images/uno_animation.png'), 5, 1)
         self.cur_frame = 0
-        self._directions = False
+        self._direction_left = False
+        self.is_active = False
         self.networking = networking
-        self.rect.move(x, y)
+        self.rect.x = x
+        self.rect.y = y
         self.image = self.frames[self.cur_frame]
 
     def cut_sheet(self, sheet, columns, rows):
@@ -48,12 +50,27 @@ class UnoButton(pygame.sprite.Sprite):
                 self.frames.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
 
+    def handle_events(self, events:  list[Event]):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.is_active:
+                    self.networking.say_uno()
+
     def update(self):
-        if self.cur_frame != 25:
-            self.cur_frame += 1
+        if not self.rect.collidepoint(pygame.mouse.get_pos()):
+            self.is_active = False
+            if self.cur_frame == 99:
+                self._direction_left = True
+            elif self.cur_frame == 0:
+                self._direction_left = False
+            if self._direction_left:
+                self.cur_frame -= 1
+            else:
+                self.cur_frame += 1
+            self.image = self.frames[self.cur_frame // 20]
         else:
-            self.cur_frame = 0
-        self.image = self.frames[5 % self.cur_frame]
+            self.is_active = True
+            self.image = self.frames[4]
 
 
 class UserInfo(pygame.sprite.Sprite):
@@ -68,7 +85,7 @@ class UserInfo(pygame.sprite.Sprite):
         # self.font.bgcolor = pygame.color.Color('Black')
         self._background = load_image('images/player_info.png')
         self._active_background = load_image('images/player_info_active.png')
-        size = self._background.get_width() + 100, self._background.get_height()
+        size = self._background.get_width() + 100, self._background.get_height() + 100
         self.image = Surface(size, pygame.SRCALPHA, 32)
         self.image.convert_alpha()
         self.rect = pygame.rect.Rect(x, y, *size)
@@ -79,11 +96,12 @@ class UserInfo(pygame.sprite.Sprite):
             self.image.blit(self._active_background, (0, 0))
         else:
             self.image.blit(self._background, (0, 0))
+        user = self.networking.current_game.users[self.user_index]
         self.name_font.render_to(self.image, (5, 102),
-                                 truncate(self.networking.current_game.users[self.user_index].name))
+                                 truncate(user.name))
         self.cards_amount_font.render_to(self.image, (110, 102),
-                                         str(len(self.networking.current_game.users[
-                                                     self.user_index].deck.cards)))
+                                         str(len(user.deck.cards)))
+        self.cards_amount_font.render_to(self.image, (12, 120), 'UNO!' if user.deck.uno_said else '')
 
 
 class CardGiver(pygame.sprite.Sprite):
@@ -338,6 +356,11 @@ class MainScreen(Screen):
             self._color_chooser.add(self._miscellaneous_group)
         else:
             self._color_chooser.remove(self._miscellaneous_group)
+        if self.networking.is_our_move and not self.networking.get_user_from_game().deck.uno_said \
+                and len(self.networking.get_user_from_game().deck.cards) == 2:
+            self._uno_button.add(self._miscellaneous_group)
+        else:
+            self._uno_button.remove(self._miscellaneous_group)
         self._all_cards.draw(self.surface)
         self._all_cards.update()
         self._all_cards.handle_events(events)

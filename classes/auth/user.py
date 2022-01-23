@@ -10,6 +10,7 @@ class User:
     address: tuple[str, int] = None
     deck: PlayerDeck = None
     points: int = 0
+    uno_said: bool = False
 
     def __post_init__(self):
         self.deck = PlayerDeck()
