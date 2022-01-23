@@ -28,6 +28,34 @@ class EventGroup(pygame.sprite.Group):
                 sprite.handle_events(events)
 
 
+class UnoButton(pygame.sprite.Sprite):
+    def __init__(self, x, y, networking, *groups: AbstractGroup):
+        super().__init__(*groups)
+        self.frames = []
+        self.cut_sheet(load_image('images/uno_animation.png'), 5, 1)
+        self.cur_frame = 0
+        self._directions = False
+        self.networking = networking
+        self.rect.move(x, y)
+        self.image = self.frames[self.cur_frame]
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        if self.cur_frame != 25:
+            self.cur_frame += 1
+        else:
+            self.cur_frame = 0
+        self.image = self.frames[5 % self.cur_frame]
+
+
 class UserInfo(pygame.sprite.Sprite):
     def __init__(self, x, y, networking: Networking, user_index: int, *groups: AbstractGroup):
         super().__init__(*groups)
@@ -127,7 +155,6 @@ class ColorChooser(pygame.sprite.Sprite):
                 rect = pygame.rect.Rect(self.rect.x + x * 103, self.rect.y + y * 103, 103, 103)
                 if rect.collidepoint(pygame.mouse.get_pos()):
                     self.image.blit(self._colors[(x, y)][1], dest=(x * 103, y * 103))
-                    print(self._active_color)
                     self._active_color = (x, y)
                 else:
                     self.image.blit(self._colors[(x, y)][0], dest=(x * 103, y * 103))
@@ -159,14 +186,13 @@ class Cards(pygame.sprite.Sprite):
                 case pygame.MOUSEBUTTONDOWN:
                     if self._active_card_index >= 0 and \
                             self.networking.is_our_move:
-                        print(self.networking.throw_card(self._active_card_index))
+                        self.networking.throw_card(self._active_card_index)
                     else:
                         pass  # TODO: play some sound when you cant throw a card
                         # (because it is not your way)
 
     def update(self, *args: Any, **kwargs: Any):
         deck = self.networking.current_game.users[self.user_id].deck
-        print(deck.cards)
         self.image.fill((0, 0, 0, 0))
         try:
             if not self.is_blank:
@@ -268,7 +294,7 @@ class MainScreen(Screen):
         self._game_deck = pygame.sprite.Group()
         self._color_chooser = ColorChooser(540, 260, networking, self._miscellaneous_group)
         self._card_giver = CardGiver(175, 20, self.networking, self._miscellaneous_group)
-
+        self._uno_button = UnoButton(1060, 560, self.networking, self._miscellaneous_group)
         self._player_indexes = _PLAYER_INDEXES[
             self.networking.user_id(self.networking.get_user_from_game())]
 

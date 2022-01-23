@@ -1,3 +1,5 @@
+## WARNING!!! THIS PROJECT REQUIRES PYTHON 3.10
+
 # PyUnoGame
 This is my one-week project, what i made for Yandex Academy Lyceum
 

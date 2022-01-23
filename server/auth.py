@@ -18,7 +18,7 @@ class Authorization:
         RETURNING id, name, password""", (username, hashed_password)).fetchone()
         self.db.commit()
         user_id, name, password_hash = user
-        return User(user_id, name)
+        return User(user_id, name, points=0)
 
     def login(self, username: str, password: str) -> User:
         cursor = self.db.cursor()

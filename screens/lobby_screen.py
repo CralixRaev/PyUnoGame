@@ -8,6 +8,7 @@ from client.networking import Networking
 from screens.abc_screen import Screen
 from screens.main_screen import MainScreen
 from utilities.image_utility import load_image
+from utilities.text_utility import truncate
 
 
 class LobbyScreen(Screen):
@@ -29,9 +30,9 @@ class LobbyScreen(Screen):
         for i, user in enumerate(self.networking.current_game.users):
             self.font.render_to(self.surface,
                                 (345 * i + 45, 465),
-                                f'{user.name} (Вы)'
+                                f'{truncate(user.name, max_len=12)} (Вы)'
                                 if self.networking.get_user_from_game().address == user.address
-                                else user.name)
+                                else truncate(user.name, max_len=15))
         if self.networking.current_game.is_started:
             self.is_running = False
         return self.is_running

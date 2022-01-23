@@ -130,8 +130,8 @@ class Server:
             # python 3.10 goes brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
             match loaded_data['type']:
                 case "register":
-                    answer = username, password = loaded_data['username'], loaded_data['password']
-                    self.__register(authorization, username, password, address)
+                    username, password = loaded_data['username'], loaded_data['password']
+                    answer = self.__register(authorization, username, password, address)
                 case "login":
                     username, password = loaded_data['username'], loaded_data['password']
                     answer = self.__login(authorization, username, password, address)
